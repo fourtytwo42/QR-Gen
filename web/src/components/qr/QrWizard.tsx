@@ -13,6 +13,7 @@ import {
   Group,
   NumberInput,
   Radio,
+  RadioGroup,
   rem,
   SegmentedControl,
   Slider,
@@ -142,12 +143,12 @@ export function QrWizard() {
                 {...form.getInputProps('defaultUrl')}
               />
             </Group>
-            <Radio.Group label="Mode" {...form.getInputProps('mode')}>
+            <RadioGroup label="Mode" {...form.getInputProps('mode')}>
               <Group mt="xs">
                 <Radio value="single" label="Single-link (302 redirect)" />
                 <Radio value="multi" label="Multi-link landing page" />
               </Group>
-            </Radio.Group>
+            </RadioGroup>
             {form.values.mode === 'multi' && (
               <Stack gap="md">
                 {destinations.map((destination, index) => (
