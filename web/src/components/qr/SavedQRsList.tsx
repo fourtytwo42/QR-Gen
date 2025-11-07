@@ -1,0 +1,113 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Badge, Box, Button, Card, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { IconExternalLink, IconTrash } from '@tabler/icons-react';
+import QRCode from 'react-qr-code';
+import { getSavedQRs, removeQRFromStorage, SavedQR } from '@/lib/localStorage';
+import Link from 'next/link';
+
+export function SavedQRsList() {
+  const [savedQRs, setSavedQRs] = useState<SavedQR[]>([]);
+
+  useEffect(() => {
+    // Load saved QRs on mount
+    const qrs = getSavedQRs();
+    setSavedQRs(qrs);
+  }, []);
+
+  const handleRemove = (id: string) => {
+    removeQRFromStorage(id);
+    setSavedQRs(getSavedQRs());
+  };
+
+  if (savedQRs.length === 0) {
+    return null;
+  }
+
+  return (
+    <Stack gap="lg">
+      <div>
+        <Badge variant="light" color="aurora.4" size="lg">
+          Your QR Codes
+        </Badge>
+        <Title order={2} mt="xs">
+          Recently created
+        </Title>
+        <Text size="sm" c="dimmed">
+          These are stored in your browser. Click any QR to open its editor.
+        </Text>
+      </div>
+
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="lg">
+        {savedQRs.map((qr) => (
+          <Card key={qr.id} padding="lg" radius="lg" withBorder>
+            <Stack gap="md">
+              <Link href={qr.editorUrl} style={{ textDecoration: 'none' }}>
+                <Box
+                  style={{
+                    background: qr.style.gradient 
+                      ? `linear-gradient(135deg, ${qr.style.gradient[0]}, ${qr.style.gradient[1]})`
+                      : qr.style.bgColor,
+                    padding: 16,
+                    borderRadius: 12,
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  <QRCode
+                    value={`https://qr-gen.studio/l/${qr.slug}`}
+                    fgColor={qr.style.fgColor}
+                    bgColor={qr.style.bgColor}
+                    size={150}
+                  />
+                </Box>
+              </Link>
+
+              <div>
+                <Text fw={600} size="sm" lineClamp={1}>
+                  {qr.title}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  /{qr.slug}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {new Date(qr.createdAt).toLocaleDateString()}
+                </Text>
+              </div>
+
+              <Group gap="xs">
+                <Button
+                  component={Link}
+                  href={qr.editorUrl}
+                  variant="light"
+                  size="xs"
+                  fullWidth
+                  rightSection={<IconExternalLink size={14} />}
+                  style={{ textDecoration: 'none' }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="subtle"
+                  color="red"
+                  size="xs"
+                  onClick={() => handleRemove(qr.id)}
+                >
+                  <IconTrash size={14} />
+                </Button>
+              </Group>
+            </Stack>
+          </Card>
+        ))}
+      </SimpleGrid>
+    </Stack>
+  );
+}
+

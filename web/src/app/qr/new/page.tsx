@@ -1,8 +1,9 @@
 'use client';
 
-import { Badge, Stack, Text, Title } from '@mantine/core';
+import { Badge, Divider, Stack, Text, Title } from '@mantine/core';
 import { SiteShell } from '@/components/layout/SiteShell';
 import { QrWizard } from '@/components/qr/QrWizard';
+import { SavedQRsList } from '@/components/qr/SavedQRsList';
 import { useEffect } from 'react';
 
 export default function NewQrPage() {
@@ -11,7 +12,12 @@ export default function NewQrPage() {
   }, []);
   return (
     <SiteShell>
-      <Stack gap="lg">
+      <Stack gap="xl">
+        <SavedQRsList />
+        
+        {/* Divider only if there are saved QRs */}
+        <Divider label="Create New QR" labelPosition="center" />
+        
         <div>
           <Badge variant="light" color="aurora.5" size="lg">
             Details → Design → Publish

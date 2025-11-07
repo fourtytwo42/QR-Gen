@@ -30,6 +30,7 @@ import { notifications } from '@mantine/notifications';
 import { IconCheck, IconPlus, IconShieldLock, IconTrash, IconVocabulary } from '@tabler/icons-react';
 import QRCode from 'react-qr-code';
 import { Destination, QrStyle, QrWizardValues } from '@/lib/types';
+import { saveQRToStorage } from '@/lib/localStorage';
 
 const MODULE_OPTIONS: QrStyle['moduleStyle'][] = ['square', 'rounded', 'dot'];
 const EYE_STYLES: QrStyle['eyeStyle'][] = ['square', 'rounded'];
@@ -155,12 +156,37 @@ export function QrWizard() {
   }, [form.values.mode, form.values.defaultUrl, destinations.length, destinations[0]?.url]);
 
   const publish = () => {
-    notifications.show({
-      title: 'Assets published',
-      message: 'SVG, PNG (512 & 2048), and PDF kit stored in R2. Bookmark your editor URL.',
-      icon: <IconCheck size={16} />,
+    // Generate mock editor token and URL for demo
+    const mockId = `qr_${Date.now()}`;
+    const mockToken = `demo_${Math.random().toString(36).substring(2, 15)}`;
+    const editorUrl = `/e/${mockToken}`;
+    
+    // Save to localStorage
+    saveQRToStorage({
+      id: mockId,
+      title: form.values.title,
+      slug: form.values.slug,
+      editorToken: mockToken,
+      editorUrl,
+      createdAt: new Date().toISOString(),
+      style: {
+        fgColor: style.fgColor,
+        bgColor: style.bgColor,
+        gradient: style.gradient,
+      },
     });
-    setActive(0);
+    
+    notifications.show({
+      title: 'QR Code Created!',
+      message: `Saved to your browser. Editor URL: ${editorUrl}`,
+      icon: <IconCheck size={16} />,
+      autoClose: 8000,
+    });
+    
+    // Redirect to editor
+    setTimeout(() => {
+      window.location.href = editorUrl;
+    }, 1500);
   };
 
   return (
@@ -387,25 +413,38 @@ export function QrWizard() {
           <GridCol span={{ base: 12, md: 5 }}>
             <Card radius={28} padding="xl">
               <Stack gap="lg" align="center">
-                <Badge size="sm" variant="light">Live Preview</Badge>
+                <Badge size="sm" variant="light">Live Preview (colors & logo only)</Badge>
                 <Box
+                  key={`${style.fgColor}-${style.bgColor}-${style.gradient?.[0]}-${style.quietZone}`}
                   style={{
-                    background: style.gradient ? `linear-gradient(135deg, ${style.gradient[0]}, ${style.gradient[1]})` : style.bgColor,
+                    background: style.gradient 
+                      ? `linear-gradient(135deg, ${style.gradient[0]}, ${style.gradient[1]})` 
+                      : style.bgColor,
                     padding: rem(style.quietZone * 4),
                     borderRadius: 24,
                     width: '100%',
                     display: 'grid',
                     placeItems: 'center',
                     position: 'relative',
+                    transition: 'all 0.3s ease',
+                    border: `2px solid ${style.fgColor}20`,
                   }}
                 >
-                  <QRCode 
-                    value={previewValue} 
-                    fgColor={style.fgColor} 
-                    bgColor={style.bgColor} 
-                    size={220}
-                    level={style.ecc === 'L' ? 'L' : style.ecc === 'M' ? 'M' : style.ecc === 'Q' ? 'Q' : 'H'}
-                  />
+                  <Box
+                    style={{
+                      background: style.bgColor,
+                      padding: 8,
+                      borderRadius: 12,
+                    }}
+                  >
+                    <QRCode 
+                      value={previewValue} 
+                      fgColor={style.fgColor} 
+                      bgColor="transparent"
+                      size={220}
+                      level={style.ecc === 'L' ? 'L' : style.ecc === 'M' ? 'M' : style.ecc === 'Q' ? 'Q' : 'H'}
+                    />
+                  </Box>
                   {logoPreview && (
                     <Box
                       style={{
@@ -416,6 +455,7 @@ export function QrWizard() {
                         background: 'white',
                         borderRadius: 8,
                         padding: 4,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                       }}
                     >
                       <img 
@@ -424,7 +464,8 @@ export function QrWizard() {
                         style={{ 
                           width: 220 * style.logoSizeRatio, 
                           height: 220 * style.logoSizeRatio,
-                          display: 'block'
+                          display: 'block',
+                          borderRadius: 4,
                         }} 
                       />
                     </Box>
