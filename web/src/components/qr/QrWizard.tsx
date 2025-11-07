@@ -13,8 +13,6 @@ import {
   GridCol,
   Group,
   NumberInput,
-  Radio,
-  RadioGroup,
   rem,
   SegmentedControl,
   Slider,
@@ -29,7 +27,7 @@ import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconCheck, IconPlus, IconShieldLock, IconTrash, IconVocabulary } from '@tabler/icons-react';
 import QRCode from 'react-qr-code';
-import { Destination, QrStyle, QrWizardValues } from '@/lib/types';
+import { Destination, QrMode, QrStyle, QrWizardValues } from '@/lib/types';
 import { saveQRToStorage } from '@/lib/localStorage';
 
 const MODULE_OPTIONS: QrStyle['moduleStyle'][] = ['square', 'rounded', 'dot'];
@@ -121,17 +119,18 @@ export function QrWizard({ editorToken }: QrWizardProps) {
   const form = useForm<QrWizardValues>({
     initialValues: {
       title: 'Product launch QR',
-      slug: 'launch-week',
-      mode: 'multi',
-      defaultUrl: 'https://launch.qr-gen.studio/roadmap',
+      slug: '', // Auto-generated
+      mode: 'single', // Auto-determined
+      defaultUrl: '',
       password: '',
     },
     validate: {
       title: (value) => (!value ? 'Add a title so analytics stay readable.' : null),
-      slug: (value) => (value.length < 4 ? 'Slug should be at least 4 characters.' : null),
-      defaultUrl: (value) => (!value.startsWith('https://') ? 'Use https:// urls only.' : null),
     },
   });
+  
+  // Auto-determine mode based on number of destinations
+  const effectiveMode: QrMode = destinations.length > 1 ? 'multi' : 'single';
 
   const addDestination = useCallback(() => {
     const newDest = createDestination(destinations.length);
@@ -148,25 +147,25 @@ export function QrWizard({ editorToken }: QrWizardProps) {
   const handleBack = () => setActive((current) => Math.max(current - 1, 0));
 
   const previewValue = useMemo(() => {
-    const mode = form.values.mode;
-    const defaultUrl = form.values.defaultUrl;
     const firstDestUrl = destinations[0]?.url;
-    
-    if (mode === 'single') {
-      return defaultUrl || 'https://qrgen.link/demo';
-    }
-
     return firstDestUrl || 'https://qrgen.link/demo';
-  }, [form.values.mode, form.values.defaultUrl, destinations.length, destinations[0]?.url]);
+  }, [destinations.length, destinations[0]?.url]);
 
   const publish = () => {
     const editorUrl = `/e/${editorToken}`;
+    
+    // Auto-generate slug from title
+    const autoSlug = form.values.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 30) || `qr-${Date.now()}`;
     
     // Save to localStorage
     saveQRToStorage({
       id: editorToken,
       title: form.values.title,
-      slug: form.values.slug,
+      slug: autoSlug,
       editorToken,
       editorUrl,
       createdAt: new Date().toISOString(),
@@ -193,7 +192,7 @@ export function QrWizard({ editorToken }: QrWizardProps) {
   return (
     <Stack gap="xl">
       <Stepper active={active} onStepClick={setActive} size="sm">
-        <StepperStep label="Details" description="Slug & destinations" />
+        <StepperStep label="Destinations" description="Add URLs to link" />
         <StepperStep label="Design" description="Branding & contrast" />
         <StepperStep label="Publish" description="Exports & governance" />
       </Stepper>
@@ -202,23 +201,18 @@ export function QrWizard({ editorToken }: QrWizardProps) {
         <Card radius={28} padding="xl">
           <Stack gap="lg">
             <TextInput label="Title" required {...form.getInputProps('title')} />
-            <Group grow>
-              <TextInput label="Slug" description="Base58 recommended" required {...form.getInputProps('slug')} />
-              <TextInput
-                label="Default destination"
-                description="302 until you opt-in to 301"
-                required
-                {...form.getInputProps('defaultUrl')}
-              />
-            </Group>
-            <RadioGroup label="Mode" {...form.getInputProps('mode')}>
-              <Group mt="xs">
-                <Radio value="single" label="Single-link (302 redirect)" />
-                <Radio value="multi" label="Multi-link landing page" />
-              </Group>
-            </RadioGroup>
-            {form.values.mode === 'multi' && (
-              <Stack gap="md">
+            
+            <Badge variant="light" color={effectiveMode === 'single' ? 'blue' : 'green'} size="lg">
+              {effectiveMode === 'single' ? 'Direct Redirect (1 destination)' : `Landing Page (${destinations.length} destinations)`}
+            </Badge>
+            
+            <Text size="sm" c="dimmed">
+              {effectiveMode === 'single' 
+                ? 'Scans will redirect directly to your destination (302)' 
+                : 'Scans will show a landing page with all your destinations'}
+            </Text>
+            
+            <Stack gap="md">
                 {destinations.map((destination, index) => {
                   if (!destination) {
                     console.error('[Destinations Map] NULL DESTINATION at index:', index);
@@ -288,11 +282,10 @@ export function QrWizard({ editorToken }: QrWizardProps) {
                   </Card>
                   );
                 }).filter(Boolean)}
-                <Button variant="light" leftSection={<IconPlus size={16} />} onClick={addDestination}>
-                  Add destination
-                </Button>
-              </Stack>
-            )}
+              <Button variant="light" leftSection={<IconPlus size={16} />} onClick={addDestination}>
+                Add destination
+              </Button>
+            </Stack>
             <Group justify="space-between">
               <Button variant="default" onClick={handleBack} disabled={active === 0}>
                 Back
