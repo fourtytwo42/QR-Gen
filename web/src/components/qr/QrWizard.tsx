@@ -79,6 +79,7 @@ export function QrWizard({ editorToken }: QrWizardProps) {
   const [style, setStyle] = useState<QrStyle>(INITIAL_STYLE);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [heroImage, setHeroImage] = useState<string | null>(null);
 const defaultOrigin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 const [origin, setOrigin] = useState<string>(defaultOrigin);
   useEffect(() => {
@@ -116,6 +117,19 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleHeroImageUpload = (file: File | null) => {
+    if (!file) {
+      setHeroImage(null);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setHeroImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const form = useForm<QrWizardValues>({
@@ -183,6 +197,8 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
         image: dest.image,
       })),
       createdAt: new Date().toISOString(),
+      origin,
+      heroImage: heroImage || undefined,
       style: {
         fgColor: style.fgColor,
         bgColor: style.bgColor,
@@ -206,14 +222,15 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-        title: form.values.title,
-        slug: randomSlug,
-        editorToken,
-        mode: effectiveMode,
-        destinations: qrData.destinations,
-        style: qrData.style,
-        password: form.values.password || undefined,
+          title: form.values.title,
+          slug: randomSlug,
+          editorToken,
+          mode: effectiveMode,
+          destinations: qrData.destinations,
+          style: qrData.style,
+          password: form.values.password || undefined,
           origin,
+          heroImage: heroImage || undefined,
         }),
       });
 
@@ -232,7 +249,7 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
     } catch (dbError) {
       console.error('[QrWizard] ❌ Database error:', dbError);
     }
-  }, [editorToken, form.values.title, form.values.password, randomSlug, effectiveMode, destinations, style]);
+  }, [editorToken, form.values.title, form.values.password, randomSlug, effectiveMode, destinations, style, heroImage, origin]);
 
   const handleNext = async () => {
     // Save to database when moving from step 0 (Destinations) to step 1 (Design)
@@ -280,6 +297,47 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
           <Stack gap="lg">
             <TextInput label="Title" required {...form.getInputProps('title')} />
             
+            <Stack gap="xs">
+              <FileButton onChange={handleHeroImageUpload} accept="image/png,image/jpeg,image/jpg,image/webp">
+                {(props) => (
+                  <Button {...props} variant="light">
+                    {heroImage ? 'Change landing page image' : 'Add landing page image'}
+                  </Button>
+                )}
+              </FileButton>
+              {heroImage && (
+                <>
+                  <Box
+                    style={{
+                      display: 'grid',
+                      placeItems: 'center',
+                      background: 'rgba(255,255,255,0.05)',
+                      borderRadius: 12,
+                      padding: 12,
+                    }}
+                  >
+                    <img
+                      src={heroImage}
+                      alt="Landing page hero"
+                      style={{
+                        maxHeight: 200,
+                        width: 'auto',
+                        maxWidth: '100%',
+                        objectFit: 'contain',
+                        borderRadius: 10,
+                      }}
+                    />
+                  </Box>
+                  <Button variant="subtle" color="red" size="xs" onClick={() => handleHeroImageUpload(null)}>
+                    Remove landing page image
+                  </Button>
+                </>
+              )}
+              <Text size="xs" c="dimmed">
+                This image appears above your destinations on the landing page.
+              </Text>
+            </Stack>
+
             <Badge variant="light" color={effectiveMode === 'single' ? 'blue' : 'green'} size="lg">
               {effectiveMode === 'single' ? 'Direct Redirect (1 destination)' : `Landing Page (${destinations.length} destinations)`}
             </Badge>
@@ -551,6 +609,39 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
                     </Box>
                   )}
                 </Box>
+
+                <Stack gap="xs" w="100%" align="center">
+                  <FileButton onChange={handleHeroImageUpload} accept="image/png,image/jpeg,image/jpg,image/webp">
+                    {(props) => (
+                      <Button {...props} variant="light" fullWidth>
+                        {heroImage ? 'Change landing page image' : 'Add landing page image'}
+                      </Button>
+                    )}
+                  </FileButton>
+                  {heroImage && (
+                    <>
+                      <Box
+                        style={{
+                          display: 'grid',
+                          placeItems: 'center',
+                          background: 'rgba(255,255,255,0.05)',
+                          borderRadius: 12,
+                          padding: 12,
+                          width: '100%',
+                        }}
+                      >
+                        <img
+                          src={heroImage}
+                          alt="Landing page hero"
+                          style={{ maxHeight: 200, width: 'auto', maxWidth: '100%', objectFit: 'contain', borderRadius: 10 }}
+                        />
+                      </Box>
+                      <Button variant="subtle" color="red" size="xs" onClick={() => handleHeroImageUpload(null)}>
+                        Remove landing page image
+                      </Button>
+                    </>
+                  )}
+                </Stack>
                 <Stack gap={4} w="100%">
                   <Group justify="space-between">
                     <Text size="xs" c="dimmed">Module:</Text>

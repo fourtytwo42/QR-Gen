@@ -1,6 +1,5 @@
 
-import { Alert, Card, Stack, Text, Button, Container, Title } from '@mantine/core';
-import { IconExternalLink, IconAlertCircle } from '@tabler/icons-react';
+import { Card, Container, Stack, Text, Title, Box, SimpleGrid } from '@mantine/core';
 import { getQRBySlug } from '@/app/actions/qr-actions';
 import { notFound } from 'next/navigation';
 
@@ -23,59 +22,97 @@ export default async function LandingPage({ params }: Props) {
     notFound();
   }
 
+  const destinations = (qrData.destinations || []).sort((a: any, b: any) => a.position - b.position);
+  const total = destinations.length;
+  const colsConfig = {
+    base: Math.max(Math.min(total, 2), 1),
+    sm: Math.max(Math.min(total, 3), 1),
+    md: Math.max(Math.min(total, 4), 1),
+    lg: Math.max(Math.min(total, 5), 1),
+    xl: Math.max(Math.min(total, 6), 1),
+  };
+
   return (
-    <Container size="sm" py="xl">
+    <Container size="xs" py="xl">
       <Stack gap="xl" align="center">
-        <div style={{ textAlign: 'center' }}>
-          <Title order={1} size="h2">{qrData.title}</Title>
-          <Text c="dimmed" size="sm" mt="xs">
-            Select a destination below
-          </Text>
+        {qrData.heroImage && (
+          <Box
+            style={{
+              width: '100%',
+              display: 'grid',
+              placeItems: 'center',
+            }}
+          >
+            <img
+              src={qrData.heroImage}
+              alt={`${qrData.title} hero`}
+              style={{ maxHeight: 320, width: 'auto', maxWidth: '100%', objectFit: 'contain' }}
+            />
+          </Box>
+        )}
+        <div style={{ textAlign: 'center', width: '100%' }}>
+          <Title order={1} size="h1">{qrData.title}</Title>
         </div>
 
-        <Stack gap="md" w="100%">
-          {qrData.destinations && qrData.destinations.length > 0 ? (
-            qrData.destinations
-              .sort((a: any, b: any) => a.position - b.position)
-              .map((dest: any) => (
-                <Card 
-                  key={dest.id} 
-                  padding="lg" 
-                  radius="lg" 
-                  withBorder
-                  component="a"
-                  href={dest.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ cursor: 'pointer', textDecoration: 'none' }}
-                >
-                  <Stack gap="xs">
-                    {dest.image && (
+        {total > 0 ? (
+          <SimpleGrid
+            w="100%"
+            spacing="lg"
+            cols={colsConfig}
+          >
+            {destinations.map((dest: any) => (
+              <Card
+                key={dest.id}
+                padding="lg"
+                radius={28}
+                withBorder={false}
+                component="a"
+                href={dest.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  background: 'transparent',
+                  boxShadow: 'none',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  padding: '0',
+                }}
+              >
+                <Stack gap="sm" align="center">
+                  <Box
+                    style={{
+                      width: 'clamp(88px, 22vw, 140px)',
+                      height: 'clamp(88px, 22vw, 140px)',
+                      borderRadius: 32,
+                      overflow: 'hidden',
+                      display: 'grid',
+                      placeItems: 'center',
+                    }}
+                  >
+                    {dest.image ? (
                       <img
                         src={dest.image}
-                        alt={dest.title || 'Destination image'}
-                        style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 12 }}
+                        alt={dest.title || 'Destination'}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
+                    ) : (
+                      <Text size="sm" c="dimmed">
+                        {dest.title?.[0] || '?'}
+                      </Text>
                     )}
-                    <Text fw={600} size="lg">{dest.title || 'Untitled'}</Text>
-                    <Text size="sm" c="dimmed" style={{ wordBreak: 'break-all' }}>
-                      {dest.url}
-                    </Text>
-                    <Button 
-                      variant="light" 
-                      rightSection={<IconExternalLink size={16} />}
-                      fullWidth
-                      mt="xs"
-                    >
-                      Visit
-                    </Button>
-                  </Stack>
-                </Card>
-              ))
-          ) : (
-            <Text c="dimmed" ta="center">No destinations configured</Text>
-          )}
-        </Stack>
+                  </Box>
+                  <Text fw={600} size="sm" ta="center">
+                    {dest.title || 'Untitled'}
+                  </Text>
+                </Stack>
+              </Card>
+            ))}
+          </SimpleGrid>
+        ) : (
+          <Text c="dimmed" ta="center">
+            No destinations configured
+          </Text>
+        )}
 
         <Text size="xs" c="dimmed" ta="center">
           Powered by QR-Gen Studio

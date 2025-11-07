@@ -52,9 +52,28 @@ export function SavedQRsList() {
       </div>
 
       <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="lg">
-        {savedQRs.map((qr) => (
+        {savedQRs.map((qr) => {
+          const cardOrigin = (qr.origin || origin).replace(/\/$/, '');
+          return (
           <Card key={qr.id} padding="lg" radius="lg" withBorder>
             <Stack gap="md">
+              {qr.heroImage && (
+                <Box
+                  style={{
+                    display: 'grid',
+                    placeItems: 'center',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: 12,
+                    padding: 12,
+                  }}
+                >
+                  <img
+                    src={qr.heroImage}
+                    alt={`${qr.title} hero`}
+                    style={{ maxHeight: 160, width: 'auto', maxWidth: '100%', objectFit: 'contain', borderRadius: 8 }}
+                  />
+                </Box>
+              )}
               <Link href={qr.editorUrl} style={{ textDecoration: 'none' }}>
                 <Box
                   style={{
@@ -74,7 +93,7 @@ export function SavedQRsList() {
                   }}
                 >
                   <QRCode
-                    value={`${origin.replace(/\/$/, '')}/l/${qr.slug}`}
+                    value={`${cardOrigin}/l/${qr.slug}`}
                     fgColor={qr.style.fgColor}
                     bgColor="transparent"
                     size={150}
@@ -87,7 +106,7 @@ export function SavedQRsList() {
                   {qr.title}
                 </Text>
                 <Text size="xs" c="dimmed" style={{ fontFamily: 'monospace' }}>
-                  {origin.replace(/\/$/, '')}/l/{qr.slug}
+                  {cardOrigin}/l/{qr.slug}
                 </Text>
                 <Text size="xs" c="dimmed">
                   {qr.mode === 'multi' ? `${qr.destinations?.length || 0} destinations` : '1 destination'}
@@ -120,7 +139,8 @@ export function SavedQRsList() {
               </Group>
             </Stack>
           </Card>
-        ))}
+        );
+        })}
       </SimpleGrid>
     </Stack>
   );

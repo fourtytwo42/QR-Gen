@@ -16,6 +16,7 @@ export interface CreateQRInput {
   style: QrStyle;
   password?: string;
   origin?: string;
+  heroImage?: string;
 }
 
 export interface CreateQRResult {
@@ -83,10 +84,11 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
             fg_color = $10,
             bg_color = $11,
             gradient_json = $12,
-            logo_size_ratio = $13,
+            hero_image = $13,
+            logo_size_ratio = $14,
             last_published_at = NOW(),
             status = 'active'
-          WHERE id = $14`,
+          WHERE id = $15`,
           [
             slug,
             input.title,
@@ -100,6 +102,7 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
             input.style.fgColor,
             input.style.bgColor,
             input.style.gradient ? JSON.stringify(input.style.gradient) : null,
+            input.heroImage || null,
             input.style.logoSizeRatio,
             qrId,
           ]
@@ -111,8 +114,8 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
           `INSERT INTO qr (
             slug, title, mode, default_destination_url, editor_token_hash, editor_password_hash,
             ecc_level, quiet_zone_modules, module_style, eye_style, fg_color, bg_color,
-            gradient_json, logo_size_ratio, last_published_at, status
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), 'active')
+            gradient_json, hero_image, logo_size_ratio, last_published_at, status
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), 'active')
           RETURNING id`,
           [
             slug,
@@ -128,6 +131,7 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
             input.style.fgColor,
             input.style.bgColor,
             input.style.gradient ? JSON.stringify(input.style.gradient) : null,
+            input.heroImage || null,
             input.style.logoSizeRatio,
           ]
         );
@@ -199,6 +203,7 @@ export async function getQRBySlug(slug: string) {
 
     return {
       ...qr,
+      heroImage: qr.hero_image,
       destinations: destinations.map((dest: any) => ({
         id: dest.id,
         title: dest.title,
@@ -237,6 +242,7 @@ export async function getQRByEditorToken(editorToken: string) {
 
     return {
       ...qr,
+      heroImage: qr.hero_image,
       destinations: destinations.map((dest: any) => ({
         id: dest.id,
         title: dest.title,

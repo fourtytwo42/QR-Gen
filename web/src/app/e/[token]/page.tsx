@@ -43,6 +43,7 @@ export default async function EditorPage({ params }: Props) {
       image: d.image,
       scans: 0,
     })),
+    heroImage: qrData.heroImage || undefined,
     style: {
       fgColor: qrData.fg_color,
       bgColor: qrData.bg_color,

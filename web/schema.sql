@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS qr (
     fg_color VARCHAR(20) NOT NULL DEFAULT '#000000',
     bg_color VARCHAR(20) NOT NULL DEFAULT '#FFFFFF',
     gradient_json JSONB,
+    hero_image TEXT,
     logo_object_key TEXT,
     logo_size_ratio DECIMAL(3,2) DEFAULT 0.20,
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived')),

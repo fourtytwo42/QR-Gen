@@ -2,6 +2,7 @@
 
 import {
   Badge,
+  Box,
   Button,
   Card,
   Grid,
@@ -41,6 +42,24 @@ export function EditorDashboard({ record }: EditorDashboardProps) {
           <Card radius={28} padding="xl">
             <Stack gap="md" align="center">
               <Badge color="aurora.4">Server authoritative preview</Badge>
+              {record.heroImage && (
+                <Box
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: 16,
+                    padding: 16,
+                    display: 'grid',
+                    placeItems: 'center',
+                  }}
+                >
+                  <img
+                    src={record.heroImage}
+                    alt="Landing page hero"
+                    style={{ maxHeight: 220, width: 'auto', maxWidth: '100%', objectFit: 'contain', borderRadius: 12 }}
+                  />
+                </Box>
+              )}
               <div
                 style={{
                   background: record.style.bgColor,
@@ -121,7 +140,7 @@ export function EditorDashboard({ record }: EditorDashboardProps) {
                         <img
                           src={destination.image}
                           alt={destination.title}
-                          style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 12 }}
+                          style={{ display: 'block', height: 56, width: 'auto', maxWidth: 100, objectFit: 'contain', borderRadius: 12 }}
                         />
                       ) : (
                         <Text size="xs" c="dimmed">

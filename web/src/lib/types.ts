@@ -67,5 +67,6 @@ export interface EditorRecord {
   analytics: EditorAnalytics;
   lastPublishedAt: string;
   bookmarkedHint?: string;
+  heroImage?: string;
   origin?: string;
 }
