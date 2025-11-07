@@ -17,15 +17,27 @@ export default function QRRedirectPage({ params }: Props) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    console.log('[QR Redirect] =============================');
     console.log('[QR Redirect] Looking for slug:', slug);
+    console.log('[QR Redirect] Slug type:', typeof slug);
+    console.log('[QR Redirect] Slug length:', slug?.length);
 
     // Find QR by slug in localStorage
     const savedQRs = getSavedQRs();
+    console.log('[QR Redirect] Found', savedQRs.length, 'QRs in localStorage');
+    console.log('[QR Redirect] All slugs:', savedQRs.map(qr => qr.slug));
+    
     const qrData = savedQRs.find((qr) => qr.slug === slug);
 
     if (!qrData) {
-      console.log('[QR Redirect] QR not found');
-      setStatus('QR code not found');
+      console.error('[QR Redirect] ❌ QR NOT FOUND!');
+      console.error('[QR Redirect] Searched for:', slug);
+      console.error('[QR Redirect] Available slugs:', savedQRs.map(qr => ({
+        slug: qr.slug,
+        title: qr.title,
+        id: qr.id
+      })));
+      setStatus('QR code not found. Redirecting...');
       setTimeout(() => {
         router.push('/');
       }, 2000);

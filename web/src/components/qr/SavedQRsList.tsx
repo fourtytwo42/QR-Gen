@@ -10,15 +10,26 @@ import Link from 'next/link';
 export function SavedQRsList() {
   const [savedQRs, setSavedQRs] = useState<SavedQR[]>([]);
 
+  const refreshQRs = () => {
+    const qrs = getSavedQRs();
+    console.log('[SavedQRsList] Loaded QRs:', qrs.length);
+    setSavedQRs(qrs);
+  };
+
   useEffect(() => {
     // Load saved QRs on mount
-    const qrs = getSavedQRs();
-    setSavedQRs(qrs);
+    refreshQRs();
+    
+    // Refresh every 2 seconds to catch auto-saves
+    const interval = setInterval(refreshQRs, 2000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const handleRemove = (id: string) => {
+    console.log('[SavedQRsList] Removing QR:', id);
     removeQRFromStorage(id);
-    setSavedQRs(getSavedQRs());
+    refreshQRs();
   };
 
   if (savedQRs.length === 0) {

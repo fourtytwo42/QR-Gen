@@ -28,7 +28,7 @@ import { notifications } from '@mantine/notifications';
 import { IconCheck, IconPlus, IconShieldLock, IconTrash, IconVocabulary } from '@tabler/icons-react';
 import QRCode from 'react-qr-code';
 import { Destination, QrMode, QrStyle, QrWizardValues } from '@/lib/types';
-import { saveQRToStorage } from '@/lib/localStorage';
+import { saveQRToStorage, getSavedQRs } from '@/lib/localStorage';
 
 const MODULE_OPTIONS: QrStyle['moduleStyle'][] = ['square', 'rounded', 'dot'];
 const EYE_STYLES: QrStyle['eyeStyle'][] = ['square', 'rounded'];
@@ -160,7 +160,11 @@ export function QrWizard({ editorToken }: QrWizardProps) {
 
   // Auto-save to localStorage so the preview QR works immediately
   useEffect(() => {
-    console.log('[QrWizard] Auto-saving to localStorage...');
+    console.log('[QrWizard] ===== AUTO-SAVE =====');
+    console.log('[QrWizard] Random Slug:', randomSlug);
+    console.log('[QrWizard] Editor Token:', editorToken);
+    console.log('[QrWizard] Mode:', effectiveMode);
+    console.log('[QrWizard] Destinations count:', destinations.length);
     
     const qrData = {
       id: editorToken,
@@ -185,7 +189,17 @@ export function QrWizard({ editorToken }: QrWizardProps) {
     };
     
     saveQRToStorage(qrData);
-    console.log('[QrWizard] Auto-saved! Slug:', randomSlug, 'Mode:', effectiveMode);
+    console.log('[QrWizard] ✅ Saved to localStorage!');
+    console.log('[QrWizard] QR URL will be: http://localhost:3000/l/' + randomSlug);
+    
+    // Verify it was saved
+    const saved = getSavedQRs();
+    const found = saved.find(qr => qr.slug === randomSlug);
+    if (found) {
+      console.log('[QrWizard] ✅ VERIFIED: QR found in localStorage');
+    } else {
+      console.error('[QrWizard] ❌ ERROR: QR NOT found in localStorage after save!');
+    }
   }, [destinations, form.values.title, style, effectiveMode, editorToken, randomSlug]);
 
   const publish = () => {
