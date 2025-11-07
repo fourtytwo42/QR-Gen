@@ -56,36 +56,84 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
     }
 
     const result = await transaction(async (client) => {
-      // Insert QR record
-      const qrResult = await client.query(
-        `INSERT INTO qr (
-          slug, title, mode, default_destination_url, editor_token_hash, editor_password_hash,
-          ecc_level, quiet_zone_modules, module_style, eye_style, fg_color, bg_color,
-          gradient_json, logo_size_ratio, last_published_at, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), 'active')
-        RETURNING id`,
-        [
-          slug,
-          input.title,
-          input.mode,
-          firstDestUrl, // Use first destination as default
-          editorTokenHash,
-          passwordHash,
-          input.style.ecc,
-          input.style.quietZone,
-          input.style.moduleStyle,
-          input.style.eyeStyle,
-          input.style.fgColor,
-          input.style.bgColor,
-          input.style.gradient ? JSON.stringify(input.style.gradient) : null,
-          input.style.logoSizeRatio,
-        ]
+      const existing = await client.query(
+        `SELECT id FROM qr WHERE editor_token_hash = $1`,
+        [editorTokenHash]
       );
 
-      const qrId = qrResult.rows[0].id;
-      console.log('[createQR] Created QR with ID:', qrId);
+      let qrId: string;
 
-      // Insert destinations
+      if ((existing.rowCount ?? 0) > 0) {
+        qrId = existing.rows[0].id;
+        console.log('[createQR] Updating existing QR with ID:', qrId);
+
+        await client.query(
+          `UPDATE qr SET
+            slug = $1,
+            title = $2,
+            mode = $3,
+            default_destination_url = $4,
+            editor_password_hash = $5,
+            ecc_level = $6,
+            quiet_zone_modules = $7,
+            module_style = $8,
+            eye_style = $9,
+            fg_color = $10,
+            bg_color = $11,
+            gradient_json = $12,
+            logo_size_ratio = $13,
+            last_published_at = NOW(),
+            status = 'active'
+          WHERE id = $14`,
+          [
+            slug,
+            input.title,
+            input.mode,
+            firstDestUrl,
+            passwordHash,
+            input.style.ecc,
+            input.style.quietZone,
+            input.style.moduleStyle,
+            input.style.eyeStyle,
+            input.style.fgColor,
+            input.style.bgColor,
+            input.style.gradient ? JSON.stringify(input.style.gradient) : null,
+            input.style.logoSizeRatio,
+            qrId,
+          ]
+        );
+
+        await client.query(`DELETE FROM qr_destination WHERE qr_id = $1`, [qrId]);
+      } else {
+        const qrResult = await client.query(
+          `INSERT INTO qr (
+            slug, title, mode, default_destination_url, editor_token_hash, editor_password_hash,
+            ecc_level, quiet_zone_modules, module_style, eye_style, fg_color, bg_color,
+            gradient_json, logo_size_ratio, last_published_at, status
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), 'active')
+          RETURNING id`,
+          [
+            slug,
+            input.title,
+            input.mode,
+            firstDestUrl,
+            editorTokenHash,
+            passwordHash,
+            input.style.ecc,
+            input.style.quietZone,
+            input.style.moduleStyle,
+            input.style.eyeStyle,
+            input.style.fgColor,
+            input.style.bgColor,
+            input.style.gradient ? JSON.stringify(input.style.gradient) : null,
+            input.style.logoSizeRatio,
+          ]
+        );
+
+        qrId = qrResult.rows[0].id;
+        console.log('[createQR] Created QR with ID:', qrId);
+      }
+
       for (const dest of normalizedDestinations) {
         await client.query(
           `INSERT INTO qr_destination (qr_id, title, url, position)
@@ -93,7 +141,7 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
           [qrId, dest.title, dest.url, dest.position]
         );
       }
-      console.log('[createQR] Inserted', normalizedDestinations.length, 'destinations');
+      console.log('[createQR] Upserted', normalizedDestinations.length, 'destinations');
 
       return { qrId, slug };
     });
