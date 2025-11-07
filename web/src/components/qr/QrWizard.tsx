@@ -8,6 +8,7 @@ import {
   Card,
   ColorInput,
   Divider,
+  FileButton,
   Grid,
   GridCol,
   Group,
@@ -73,11 +74,44 @@ export function QrWizard() {
     },
   ]);
   const [style, setStyle] = useState<QrStyle>(INITIAL_STYLE);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   
   // Log on mount only
   useEffect(() => {
     console.log('[QrWizard] Component mounted');
   }, []);
+
+  // Handle logo file upload
+  const handleLogoUpload = (file: File | null) => {
+    setLogoFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      setStyle((prev) => ({ ...prev, withLogo: true, ecc: 'H' }));
+    } else {
+      setLogoPreview(null);
+      setStyle((prev) => ({ ...prev, withLogo: false, ecc: 'M' }));
+    }
+  };
+
+  // Handle destination image upload
+  const handleDestinationImage = (destId: string, file: File | null) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setDestinations((prev) =>
+          prev.map((item) =>
+            item?.id === destId ? { ...item, image: reader.result as string } : item
+          )
+        );
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const form = useForm<QrWizardValues>({
     initialValues: {
@@ -193,6 +227,25 @@ export function QrWizard() {
                             );
                           }}
                         />
+                        <FileButton 
+                          onChange={(file) => handleDestinationImage(destination.id, file)} 
+                          accept="image/png,image/jpeg,image/jpg"
+                        >
+                          {(props) => (
+                            <Button {...props} variant="light" size="xs" fullWidth>
+                              {destination.image ? 'Change Image' : 'Add Image (optional)'}
+                            </Button>
+                          )}
+                        </FileButton>
+                        {destination.image && (
+                          <Box style={{ textAlign: 'center', marginTop: 8 }}>
+                            <img 
+                              src={destination.image} 
+                              alt={destination.title} 
+                              style={{ maxWidth: 100, maxHeight: 100, borderRadius: 8 }} 
+                            />
+                          </Box>
+                        )}
                       </Stack>
                       {destinations.length > 1 && (
                         <Button
@@ -305,10 +358,28 @@ export function QrWizard() {
                   }
                   description="We enforce ECC=H when a logo is present"
                 />
+                <Stack gap="xs">
+                  <FileButton onChange={handleLogoUpload} accept="image/png,image/jpeg,image/svg+xml">
+                    {(props) => <Button {...props} variant="light" fullWidth>
+                      {logoFile ? 'Change Logo' : 'Upload Logo'}
+                    </Button>}
+                  </FileButton>
+                  {logoFile && (
+                    <Button variant="subtle" color="red" onClick={() => handleLogoUpload(null)} fullWidth>
+                      Remove Logo
+                    </Button>
+                  )}
+                </Stack>
                 {style.withLogo && (
                   <Badge color="aurora.4" leftSection={<IconShieldLock size={12} />}>
                     ECC bumped to H for logo safety
                   </Badge>
+                )}
+                {logoPreview && (
+                  <Box style={{ textAlign: 'center' }}>
+                    <Text size="xs" c="dimmed" mb={4}>Logo preview:</Text>
+                    <img src={logoPreview} alt="Logo" style={{ maxWidth: 80, maxHeight: 80 }} />
+                  </Box>
                 )}
               </Stack>
             </Card>
@@ -316,28 +387,71 @@ export function QrWizard() {
           <GridCol span={{ base: 12, md: 5 }}>
             <Card radius={28} padding="xl">
               <Stack gap="lg" align="center">
+                <Badge size="sm" variant="light">Live Preview</Badge>
                 <Box
                   style={{
-                    background: style.bgColor,
-                    padding: rem(24),
+                    background: style.gradient ? `linear-gradient(135deg, ${style.gradient[0]}, ${style.gradient[1]})` : style.bgColor,
+                    padding: rem(style.quietZone * 4),
                     borderRadius: 24,
                     width: '100%',
                     display: 'grid',
                     placeItems: 'center',
+                    position: 'relative',
                   }}
                 >
-                  <QRCode value={previewValue} fgColor={style.fgColor} bgColor={style.bgColor} size={220} />
+                  <QRCode 
+                    value={previewValue} 
+                    fgColor={style.fgColor} 
+                    bgColor={style.bgColor} 
+                    size={220}
+                    level={style.ecc === 'L' ? 'L' : style.ecc === 'M' ? 'M' : style.ecc === 'Q' ? 'Q' : 'H'}
+                  />
+                  {logoPreview && (
+                    <Box
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        background: 'white',
+                        borderRadius: 8,
+                        padding: 4,
+                      }}
+                    >
+                      <img 
+                        src={logoPreview} 
+                        alt="Logo" 
+                        style={{ 
+                          width: 220 * style.logoSizeRatio, 
+                          height: 220 * style.logoSizeRatio,
+                          display: 'block'
+                        }} 
+                      />
+                    </Box>
+                  )}
                 </Box>
-                <Text size="sm" c="dimmed">
-                  Preview uses react-qr-code. Server-side assets are rendered with EasyQRCodeJS-NodeJS + Sharp.
+                <Stack gap={4} w="100%">
+                  <Group justify="space-between">
+                    <Text size="xs" c="dimmed">Module:</Text>
+                    <Badge size="xs" variant="dot">{style.moduleStyle}</Badge>
+                  </Group>
+                  <Group justify="space-between">
+                    <Text size="xs" c="dimmed">Eye:</Text>
+                    <Badge size="xs" variant="dot">{style.eyeStyle}</Badge>
+                  </Group>
+                  <Group justify="space-between">
+                    <Text size="xs" c="dimmed">Quiet zone:</Text>
+                    <Badge size="xs" variant="dot">{style.quietZone} modules</Badge>
+                  </Group>
+                  <Group justify="space-between">
+                    <Text size="xs" c="dimmed">ECC:</Text>
+                    <Badge size="xs" variant="dot">{style.ecc}</Badge>
+                  </Group>
+                </Stack>
+                <Text size="sm" c="dimmed" ta="center">
+                  Client preview. Server renders final SVG/PNG with all styling via EasyQRCodeJS + Sharp.
                 </Text>
               </Stack>
-              <Divider my="lg" />
-              <Text fw={600}>Accessibility</Text>
-              <Text size="sm" c="dimmed">
-                Color contrast and quiet zones are validated automatically. Gradients are tested against WCAG ratios
-                and ISO/IEC 18004 minimums.
-              </Text>
             </Card>
           </GridCol>
           <GridCol span={12}>
