@@ -146,36 +146,38 @@ export function QrWizard({ editorToken }: QrWizardProps) {
   const handleNext = () => setActive((current) => Math.min(current + 1, 2));
   const handleBack = () => setActive((current) => Math.max(current - 1, 0));
 
-  // Generate preview slug from title
-  const previewSlug = useMemo(() => {
-    const title = form.values.title;
-    if (!title) return 'demo';
-    
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 30) || `qr-${Date.now()}`;
-  }, [form.values.title]);
+  // Generate random alphanumeric slug (10 characters)
+  const [randomSlug] = useState(() => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 10; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  });
 
-  // QR code should point to our redirect endpoint
+  // QR code should point to our redirect endpoint with random slug
   const previewValue = useMemo(() => {
     // Use the actual domain in production, localhost for dev
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    return `${baseUrl}/l/${previewSlug}`;
-  }, [previewSlug]);
+    return `${baseUrl}/l/${randomSlug}`;
+  }, [randomSlug]);
 
   const publish = () => {
     const editorUrl = `/e/${editorToken}`;
     
-    // Auto-generate slug from title (same as preview)
-    const autoSlug = previewSlug;
+    // Use the random slug generated on mount
+    const qrSlug = randomSlug;
+    
+    console.log('[Publish] QR Slug:', qrSlug);
+    console.log('[Publish] Editor Token:', editorToken);
+    console.log('[Publish] QR URL will be:', `http://localhost:3000/l/${qrSlug}`);
     
     // Save to localStorage with destinations and mode
     saveQRToStorage({
       id: editorToken,
       title: form.values.title,
-      slug: autoSlug,
+      slug: qrSlug,
       editorToken,
       editorUrl,
       mode: effectiveMode,
