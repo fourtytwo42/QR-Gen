@@ -51,7 +51,6 @@ export function ShortLinkWizard() {
             />
             <SegmentedControl
               fullWidth
-              color="aurora"
               value={String(form.values.redirectCode || 302)}
               onChange={(value) => {
                 console.log('[ShortLink SegmentedControl] onChange value:', value);

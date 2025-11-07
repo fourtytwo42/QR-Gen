@@ -1,13 +1,14 @@
-import { Metadata } from 'next';
+'use client';
+
 import { Badge, Stack, Text, Title } from '@mantine/core';
 import { SiteShell } from '@/components/layout/SiteShell';
 import { QrWizard } from '@/components/qr/QrWizard';
-
-export const metadata: Metadata = {
-  title: 'Create QR · QR-Gen Studio',
-};
+import { useEffect } from 'react';
 
 export default function NewQrPage() {
+  useEffect(() => {
+    document.title = 'Create QR · QR-Gen Studio';
+  }, []);
   return (
     <SiteShell>
       <Stack gap="lg">

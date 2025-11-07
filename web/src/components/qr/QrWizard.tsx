@@ -44,10 +44,11 @@ const INITIAL_STYLE: QrStyle = {
   logoSizeRatio: 0.22,
 };
 
-const SLIDER_MARKS = [
+// Slider marks defined outside component to prevent re-creation
+const SLIDER_MARKS: Array<{ value: number; label: string }> = [
   { value: 0.18, label: 'Safe' },
   { value: 0.28, label: 'Max print' },
-].filter(m => m && m.value !== null && m.value !== undefined);
+];
 
 function createDestination(position: number): Destination {
   return {
@@ -60,11 +61,6 @@ function createDestination(position: number): Destination {
 }
 
 export function QrWizard() {
-  console.log('[QrWizard] Initializing component');
-  console.log('[QrWizard] MODULE_OPTIONS:', MODULE_OPTIONS);
-  console.log('[QrWizard] EYE_STYLES:', EYE_STYLES);
-  console.log('[QrWizard] SLIDER_MARKS:', SLIDER_MARKS);
-  
   const [active, setActive] = useState(0);
   const [destinations, setDestinations] = useState<Destination[]>([
     {
@@ -77,7 +73,10 @@ export function QrWizard() {
   ]);
   const [style, setStyle] = useState<QrStyle>(INITIAL_STYLE);
   
-  console.log('[QrWizard] State initialized. Active:', active, 'Style:', style);
+  // Log on mount only
+  if (typeof window !== 'undefined') {
+    console.log('[QrWizard] Render - Active:', active, 'Destinations:', destinations.length, 'Style module:', style.moduleStyle);
+  }
 
   const form = useForm<QrWizardValues>({
     initialValues: {
@@ -235,7 +234,6 @@ export function QrWizard() {
                   </Text>
                   <SegmentedControl
                   fullWidth
-                  color="aurora"
                   data={MODULE_OPTIONS.filter(Boolean).map((option) => {
                     console.log('[SegmentedControl] Mapping option:', option);
                     if (!option) {
@@ -258,7 +256,6 @@ export function QrWizard() {
                   </Text>
                   <SegmentedControl
                   fullWidth
-                  color="aurora"
                   data={EYE_STYLES.filter(Boolean).map((option) => {
                     console.log('[SegmentedControl Eye] Mapping option:', option);
                     if (!option) {
