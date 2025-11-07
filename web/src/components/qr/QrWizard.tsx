@@ -367,7 +367,19 @@ export function QrWizard({ editorToken }: QrWizardProps) {
               <Button variant="default" onClick={handleBack} disabled={active === 0}>
                 Back
               </Button>
-              <Button onClick={handleNext}>Continue to design</Button>
+              <Group gap="xs">
+                <Button variant="light" onClick={() => {
+                  saveToLocalStorage();
+                  notifications.show({
+                    title: 'Saved!',
+                    message: `QR saved with slug: ${randomSlug}`,
+                    color: 'green',
+                  });
+                }}>
+                  💾 Save Now (Debug)
+                </Button>
+                <Button onClick={handleNext}>Continue to design</Button>
+              </Group>
             </Group>
           </Stack>
         </Card>
