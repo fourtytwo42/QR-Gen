@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Badge,
   Box,
@@ -62,7 +62,6 @@ function createDestination(position: number): Destination {
 }
 
 export function QrWizard() {
-  const renderCount = useRef(0);
   const [active, setActive] = useState(0);
   const [destinations, setDestinations] = useState<Destination[]>([
     {
@@ -75,14 +74,10 @@ export function QrWizard() {
   ]);
   const [style, setStyle] = useState<QrStyle>(INITIAL_STYLE);
   
-  // Track render count
+  // Log on mount only
   useEffect(() => {
-    renderCount.current += 1;
-    console.log('[QrWizard] Render #' + renderCount.current, '- Active:', active, 'Destinations:', destinations.length);
-    if (renderCount.current > 5) {
-      console.error('[QrWizard] RENDER LOOP DETECTED! Count:', renderCount.current);
-    }
-  });
+    console.log('[QrWizard] Component mounted');
+  }, []);
 
   const form = useForm<QrWizardValues>({
     initialValues: {
@@ -99,20 +94,16 @@ export function QrWizard() {
     },
   });
 
-  const addDestination = () => {
+  const addDestination = useCallback(() => {
     const newDest = createDestination(destinations.length);
-    console.log('[Add Destination] Creating new destination:', newDest);
-    setDestinations((prev) => {
-      console.log('[Add Destination] Previous destinations:', prev);
-      const updated = [...prev, newDest];
-      console.log('[Add Destination] Updated destinations:', updated);
-      return updated;
-    });
-  };
+    console.log('[Add Destination]', newDest.id);
+    setDestinations((prev) => [...prev, newDest]);
+  }, [destinations.length]);
 
-  const removeDestination = (id: string) => {
+  const removeDestination = useCallback((id: string) => {
+    console.log('[Remove Destination]', id);
     setDestinations((prev) => prev.filter((dest) => dest.id !== id));
-  };
+  }, []);
 
   const handleNext = () => setActive((current) => Math.min(current + 1, 2));
   const handleBack = () => setActive((current) => Math.max(current - 1, 0));
@@ -182,7 +173,6 @@ export function QrWizard() {
                           value={destination.title || ''}
                           onChange={(event) => {
                             const newValue = event.currentTarget.value;
-                            console.log('[Title Change]', destination.id, '→', newValue);
                             setDestinations((prev) =>
                               prev.map((item) =>
                                 item?.id === destination.id ? { ...item, title: newValue } : item
@@ -196,7 +186,6 @@ export function QrWizard() {
                           value={destination.url || ''}
                           onChange={(event) => {
                             const newValue = event.currentTarget.value;
-                            console.log('[URL Change]', destination.id, '→', newValue);
                             setDestinations((prev) =>
                               prev.map((item) =>
                                 item?.id === destination.id ? { ...item, url: newValue } : item
