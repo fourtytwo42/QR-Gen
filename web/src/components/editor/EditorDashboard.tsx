@@ -12,6 +12,11 @@ import {
   Stack,
   Switch,
   Table,
+  TableTbody,
+  TableTd,
+  TableTh,
+  TableThead,
+  TableTr,
   Text,
   ThemeIcon,
 } from '@mantine/core';
@@ -95,26 +100,26 @@ export function EditorDashboard({ record }: EditorDashboardProps) {
               </Badge>
             </Group>
             <Table highlightOnHover horizontalSpacing="md" verticalSpacing="md">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Title</Table.Th>
-                  <Table.Th>URL</Table.Th>
-                  <Table.Th ta="right">Scans</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
+              <TableThead>
+                <TableTr>
+                  <TableTh>Title</TableTh>
+                  <TableTh>URL</TableTh>
+                  <TableTh ta="right">Scans</TableTh>
+                </TableTr>
+              </TableThead>
+              <TableTbody>
                 {record.destinations.map((destination) => (
-                  <Table.Tr key={destination.id}>
-                    <Table.Td>{destination.title}</Table.Td>
-                    <Table.Td>
+                  <TableTr key={destination.id}>
+                    <TableTd>{destination.title}</TableTd>
+                    <TableTd>
                       <Text size="sm" c="dimmed">
                         {destination.url}
                       </Text>
-                    </Table.Td>
-                    <Table.Td ta="right">{destination.scans.toLocaleString()}</Table.Td>
-                  </Table.Tr>
+                    </TableTd>
+                    <TableTd ta="right">{destination.scans.toLocaleString()}</TableTd>
+                  </TableTr>
                 ))}
-              </Table.Tbody>
+              </TableTbody>
             </Table>
           </Card>
         </GridCol>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -62,6 +62,7 @@ function createDestination(position: number): Destination {
 }
 
 export function QrWizard() {
+  const renderCount = useRef(0);
   const [active, setActive] = useState(0);
   const [destinations, setDestinations] = useState<Destination[]>([
     {
@@ -74,10 +75,14 @@ export function QrWizard() {
   ]);
   const [style, setStyle] = useState<QrStyle>(INITIAL_STYLE);
   
-  // Log on mount only
-  if (typeof window !== 'undefined') {
-    console.log('[QrWizard] Render - Active:', active, 'Destinations:', destinations.length, 'Style module:', style.moduleStyle);
-  }
+  // Track render count
+  useEffect(() => {
+    renderCount.current += 1;
+    console.log('[QrWizard] Render #' + renderCount.current, '- Active:', active, 'Destinations:', destinations.length);
+    if (renderCount.current > 5) {
+      console.error('[QrWizard] RENDER LOOP DETECTED! Count:', renderCount.current);
+    }
+  });
 
   const form = useForm<QrWizardValues>({
     initialValues: {
@@ -113,12 +118,16 @@ export function QrWizard() {
   const handleBack = () => setActive((current) => Math.max(current - 1, 0));
 
   const previewValue = useMemo(() => {
-    if (form.values.mode === 'single') {
-      return form.values.defaultUrl;
+    const mode = form.values.mode;
+    const defaultUrl = form.values.defaultUrl;
+    const firstDestUrl = destinations[0]?.url;
+    
+    if (mode === 'single') {
+      return defaultUrl || 'https://qrgen.link/demo';
     }
 
-    return destinations[0]?.url || 'https://qrgen.link/demo';
-  }, [form.values.mode, form.values.defaultUrl, destinations]);
+    return firstDestUrl || 'https://qrgen.link/demo';
+  }, [form.values.mode, form.values.defaultUrl, destinations.length, destinations[0]?.url]);
 
   const publish = () => {
     notifications.show({
@@ -159,7 +168,6 @@ export function QrWizard() {
             {form.values.mode === 'multi' && (
               <Stack gap="md">
                 {destinations.map((destination, index) => {
-                  console.log('[Destinations Map] Processing destination:', index, destination?.id, destination);
                   if (!destination) {
                     console.error('[Destinations Map] NULL DESTINATION at index:', index);
                     return null;
@@ -173,18 +181,13 @@ export function QrWizard() {
                           placeholder="Title"
                           value={destination.title || ''}
                           onChange={(event) => {
-                            console.log('[Title Change] For destination:', destination.id, 'New value:', event.currentTarget.value);
-                            setDestinations((prev) => {
-                              console.log('[Title Change] Current destinations:', prev);
-                              return prev.map((item) => {
-                                console.log('[Title Change] Mapping item:', item?.id);
-                                if (!item) {
-                                  console.error('[Title Change] NULL ITEM IN MAP!');
-                                  return item;
-                                }
-                                return item.id === destination.id ? { ...item, title: event.currentTarget.value } : item;
-                              });
-                            });
+                            const newValue = event.currentTarget.value;
+                            console.log('[Title Change]', destination.id, '→', newValue);
+                            setDestinations((prev) =>
+                              prev.map((item) =>
+                                item?.id === destination.id ? { ...item, title: newValue } : item
+                              ).filter(Boolean)
+                            );
                           }}
                         />
                         <TextInput
@@ -192,18 +195,13 @@ export function QrWizard() {
                           placeholder="https://"
                           value={destination.url || ''}
                           onChange={(event) => {
-                            console.log('[URL Change] For destination:', destination.id, 'New value:', event.currentTarget.value);
-                            setDestinations((prev) => {
-                              console.log('[URL Change] Current destinations:', prev);
-                              return prev.map((item) => {
-                                console.log('[URL Change] Mapping item:', item?.id);
-                                if (!item) {
-                                  console.error('[URL Change] NULL ITEM IN MAP!');
-                                  return item;
-                                }
-                                return item.id === destination.id ? { ...item, url: event.currentTarget.value } : item;
-                              });
-                            });
+                            const newValue = event.currentTarget.value;
+                            console.log('[URL Change]', destination.id, '→', newValue);
+                            setDestinations((prev) =>
+                              prev.map((item) =>
+                                item?.id === destination.id ? { ...item, url: newValue } : item
+                              ).filter(Boolean)
+                            );
                           }}
                         />
                       </Stack>
@@ -263,14 +261,7 @@ export function QrWizard() {
                   </Text>
                   <SegmentedControl
                   fullWidth
-                  data={MODULE_OPTIONS.filter(Boolean).map((option) => {
-                    console.log('[SegmentedControl] Mapping option:', option);
-                    if (!option) {
-                      console.error('[SegmentedControl] NULL OPTION DETECTED!');
-                      return { label: 'square', value: 'square' };
-                    }
-                    return { label: option, value: option };
-                  })}
+                  data={MODULE_OPTIONS.filter(Boolean).map((option) => ({ label: option, value: option }))}
                   value={style.moduleStyle || 'square'}
                   onChange={(value) => {
                     console.log('[SegmentedControl] onChange value:', value);
@@ -285,14 +276,7 @@ export function QrWizard() {
                   </Text>
                   <SegmentedControl
                   fullWidth
-                  data={EYE_STYLES.filter(Boolean).map((option) => {
-                    console.log('[SegmentedControl Eye] Mapping option:', option);
-                    if (!option) {
-                      console.error('[SegmentedControl Eye] NULL OPTION DETECTED!');
-                      return { label: 'square', value: 'square' };
-                    }
-                    return { label: option, value: option };
-                  })}
+                  data={EYE_STYLES.filter(Boolean).map((option) => ({ label: option, value: option }))}
                   value={style.eyeStyle || 'square'}
                   onChange={(value) => {
                     console.log('[SegmentedControl Eye] onChange value:', value);
