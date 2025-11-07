@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -79,6 +79,7 @@ export function QrWizard({ editorToken }: QrWizardProps) {
   const [style, setStyle] = useState<QrStyle>(INITIAL_STYLE);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const hasSavedForPreview = useRef(false);
 
   // Handle logo file upload
   const handleLogoUpload = (file: File | null) => {
@@ -138,9 +139,6 @@ export function QrWizard({ editorToken }: QrWizardProps) {
     setDestinations((prev) => prev.filter((dest) => dest.id !== id));
   }, []);
 
-  const handleNext = () => setActive((current) => Math.min(current + 1, 2));
-  const handleBack = () => setActive((current) => Math.max(current - 1, 0));
-
   // Generate random alphanumeric slug (10 characters)
   const [randomSlug] = useState(() => {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -158,9 +156,8 @@ export function QrWizard({ editorToken }: QrWizardProps) {
     return `${baseUrl}/l/${randomSlug}`;
   }, [randomSlug]);
 
-  // Auto-save to localStorage so the preview QR works immediately
-  useEffect(() => {
-    console.log('[QrWizard] ===== AUTO-SAVE =====');
+  const saveToLocalStorage = useCallback(() => {
+    console.log('[QrWizard] ===== SAVING TO LOCALSTORAGE =====');
     console.log('[QrWizard] Random Slug:', randomSlug);
     console.log('[QrWizard] Editor Token:', editorToken);
     console.log('[QrWizard] Mode:', effectiveMode);
@@ -190,7 +187,7 @@ export function QrWizard({ editorToken }: QrWizardProps) {
     
     saveQRToStorage(qrData);
     console.log('[QrWizard] ✅ Saved to localStorage!');
-    console.log('[QrWizard] QR URL will be: http://localhost:3000/l/' + randomSlug);
+    console.log('[QrWizard] QR URL: http://localhost:3000/l/' + randomSlug);
     
     // Verify it was saved
     const saved = getSavedQRs();
@@ -200,7 +197,28 @@ export function QrWizard({ editorToken }: QrWizardProps) {
     } else {
       console.error('[QrWizard] ❌ ERROR: QR NOT found in localStorage after save!');
     }
-  }, [destinations, form.values.title, style, effectiveMode, editorToken, randomSlug]);
+  }, [editorToken, form.values.title, randomSlug, effectiveMode, destinations, style]);
+
+  const handleNext = () => {
+    // Save to localStorage when moving from step 0 (Destinations) to step 1 (Design)
+    if (active === 0) {
+      saveToLocalStorage();
+    }
+    setActive((current) => Math.min(current + 1, 2));
+  };
+  
+  const handleBack = () => setActive((current) => Math.max(current - 1, 0));
+
+  // Save when entering Design step so preview QR works
+  useEffect(() => {
+    // When user enters step 1 (Design), save ONCE so preview QR works
+    if (active === 1 && !hasSavedForPreview.current) {
+      console.log('[QrWizard] Entered Design step - saving for preview...');
+      saveToLocalStorage();
+      hasSavedForPreview.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]); // Only depend on active, not saveToLocalStorage
 
   const publish = () => {
     const editorUrl = `/e/${editorToken}`;
