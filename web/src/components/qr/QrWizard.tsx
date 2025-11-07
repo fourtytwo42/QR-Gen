@@ -23,7 +23,7 @@ import {
   TextInput,
   Textarea,
 } from '@mantine/core';
-import { Stepper } from '@mantine/core';
+import { Stepper, StepperStep } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconCheck, IconPlus, IconShieldLock, IconTrash, IconVocabulary } from '@tabler/icons-react';
@@ -95,7 +95,14 @@ export function QrWizard() {
   });
 
   const addDestination = () => {
-    setDestinations((prev) => [...prev, createDestination(prev.length)]);
+    const newDest = createDestination(destinations.length);
+    console.log('[Add Destination] Creating new destination:', newDest);
+    setDestinations((prev) => {
+      console.log('[Add Destination] Previous destinations:', prev);
+      const updated = [...prev, newDest];
+      console.log('[Add Destination] Updated destinations:', updated);
+      return updated;
+    });
   };
 
   const removeDestination = (id: string) => {
@@ -125,9 +132,9 @@ export function QrWizard() {
   return (
     <Stack gap="xl">
       <Stepper active={active} onStepClick={setActive} size="sm">
-        <Stepper.Step label="Details" description="Slug & destinations" />
-        <Stepper.Step label="Design" description="Branding & contrast" />
-        <Stepper.Step label="Publish" description="Exports & governance" />
+        <StepperStep label="Details" description="Slug & destinations" />
+        <StepperStep label="Design" description="Branding & contrast" />
+        <StepperStep label="Publish" description="Exports & governance" />
       </Stepper>
 
       {active === 0 && (
@@ -151,33 +158,53 @@ export function QrWizard() {
             </RadioGroup>
             {form.values.mode === 'multi' && (
               <Stack gap="md">
-                {destinations.map((destination, index) => (
+                {destinations.map((destination, index) => {
+                  console.log('[Destinations Map] Processing destination:', index, destination?.id, destination);
+                  if (!destination) {
+                    console.error('[Destinations Map] NULL DESTINATION at index:', index);
+                    return null;
+                  }
+                  return (
                   <Card key={destination.id} padding="md" radius="lg">
                     <Group justify="space-between" align="flex-start">
                       <Stack gap="xs" flex={1}>
                         <TextInput
                           label={`Destination ${index + 1}`}
                           placeholder="Title"
-                          value={destination.title}
-                          onChange={(event) =>
-                            setDestinations((prev) =>
-                              prev.map((item) =>
-                                item.id === destination.id ? { ...item, title: event.currentTarget.value } : item,
-                              ),
-                            )
-                          }
+                          value={destination.title || ''}
+                          onChange={(event) => {
+                            console.log('[Title Change] For destination:', destination.id, 'New value:', event.currentTarget.value);
+                            setDestinations((prev) => {
+                              console.log('[Title Change] Current destinations:', prev);
+                              return prev.map((item) => {
+                                console.log('[Title Change] Mapping item:', item?.id);
+                                if (!item) {
+                                  console.error('[Title Change] NULL ITEM IN MAP!');
+                                  return item;
+                                }
+                                return item.id === destination.id ? { ...item, title: event.currentTarget.value } : item;
+                              });
+                            });
+                          }}
                         />
                         <TextInput
                           label="URL"
                           placeholder="https://"
-                          value={destination.url}
-                          onChange={(event) =>
-                            setDestinations((prev) =>
-                              prev.map((item) =>
-                                item.id === destination.id ? { ...item, url: event.currentTarget.value } : item,
-                              ),
-                            )
-                          }
+                          value={destination.url || ''}
+                          onChange={(event) => {
+                            console.log('[URL Change] For destination:', destination.id, 'New value:', event.currentTarget.value);
+                            setDestinations((prev) => {
+                              console.log('[URL Change] Current destinations:', prev);
+                              return prev.map((item) => {
+                                console.log('[URL Change] Mapping item:', item?.id);
+                                if (!item) {
+                                  console.error('[URL Change] NULL ITEM IN MAP!');
+                                  return item;
+                                }
+                                return item.id === destination.id ? { ...item, url: event.currentTarget.value } : item;
+                              });
+                            });
+                          }}
                         />
                       </Stack>
                       {destinations.length > 1 && (
@@ -192,7 +219,8 @@ export function QrWizard() {
                       )}
                     </Group>
                   </Card>
-                ))}
+                  );
+                }).filter(Boolean)}
                 <Button variant="light" leftSection={<IconPlus size={16} />} onClick={addDestination}>
                   Add destination
                 </Button>
