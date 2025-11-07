@@ -63,7 +63,11 @@ function createDestination(position: number): Destination {
   };
 }
 
-export function QrWizard() {
+interface QrWizardProps {
+  editorToken: string;
+}
+
+export function QrWizard({ editorToken }: QrWizardProps) {
   const [active, setActive] = useState(0);
   const [destinations, setDestinations] = useState<Destination[]>([
     {
@@ -156,17 +160,14 @@ export function QrWizard() {
   }, [form.values.mode, form.values.defaultUrl, destinations.length, destinations[0]?.url]);
 
   const publish = () => {
-    // Generate mock editor token and URL for demo
-    const mockId = `qr_${Date.now()}`;
-    const mockToken = `demo_${Math.random().toString(36).substring(2, 15)}`;
-    const editorUrl = `/e/${mockToken}`;
+    const editorUrl = `/e/${editorToken}`;
     
     // Save to localStorage
     saveQRToStorage({
-      id: mockId,
+      id: editorToken,
       title: form.values.title,
       slug: form.values.slug,
-      editorToken: mockToken,
+      editorToken,
       editorUrl,
       createdAt: new Date().toISOString(),
       style: {
@@ -177,13 +178,13 @@ export function QrWizard() {
     });
     
     notifications.show({
-      title: 'QR Code Created!',
-      message: `Saved to your browser. Editor URL: ${editorUrl}`,
+      title: 'QR Code Published!',
+      message: 'Bookmark your editor URL. Redirecting...',
       icon: <IconCheck size={16} />,
-      autoClose: 8000,
+      autoClose: 3000,
     });
     
-    // Redirect to editor
+    // Redirect to editor using the same token
     setTimeout(() => {
       window.location.href = editorUrl;
     }, 1500);

@@ -26,6 +26,7 @@ import {
   IconSparkles,
 } from '@tabler/icons-react';
 import { SiteShell } from '@/components/layout/SiteShell';
+import { SavedQRsList } from '@/components/qr/SavedQRsList';
 
 export const dynamic = 'force-dynamic';
 
@@ -114,6 +115,7 @@ export default function HomePage() {
     <SiteShell>
       <Stack gap={60}>
         <Hero />
+        <SavedQRsList />
         <UseCases />
         <FeatureShowcase />
         <FlowOverview />
