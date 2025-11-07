@@ -1,0 +1,500 @@
+Product Vision
+
+Create a fast, elegant web app that lets anyone generate:
+
+QR experiences with one link (instant redirect) and many links (auto-built landing page).
+
+Branded QR codes with embedded logo and advanced styling.
+
+Short links with analytics.
+
+Every QR has a private editor page on a secret URL, which the creator is prompted to bookmark. The editor page supports an optional password for extra protection. No user accounts. Mobile-first UI with a superb experience on vertical monitors.
+
+Final Technology Choices
+
+Frontend framework: Next.js (App-directory routing) with React 18.
+
+Reason: excellent DX, server components, streaming, and built-in image optimization. Docs: App-directory routing guidance. 
+Next.js
++2
+Next.js
++2
+
+UI library: Mantine v7 (components, theming, dark mode, A11y). 
+Mantine
++4
+Mantine
++4
+Mantine
++4
+
+Icon set: Tabler Icons (MIT, large high-quality set). 
+Tabler
++2
+GitHub
++2
+
+QR rendering (server-authoritative): EasyQRCodeJS-NodeJS for SVG/PNG with styling and embedded logos. 
+npm
+
+Image processing: Sharp for logo normalization, thumbnails, and export variants. 
+sharp
++2
+GitHub
++2
+
+PDF exports (shareable spec sheets): PDFKit. 
+pdfkit.org
+
+Database: PostgreSQL 18 installed on the server (native install). Supported through Nov 2030 under upstream policy. 
+PostgreSQL
++1
+
+Runtime: Node.js 24 LTS (supported to Apr 2028). 
+endoflife.date
++1
+
+Reverse proxy & TLS termination: Nginx on the same host.
+
+Static and binary asset storage: Cloudflare R2 bucket (for QR SVG/PNG exports, uploaded logos, landing page images).
+
+CDN & caching: Cloudflare CDN in front of Nginx.
+
+Telemetry & monitoring: Application logs to files on the host, error alerts via your preferred notifier later; no third-party trackers by default.
+
+Malicious-link screening: Google Web Risk API for commercial URL risk checks. 
+Google Cloud
+
+Geolocation for basic analytics: MaxMind GeoLite2 (self-hosted database) with license key. 
+MaxMind
++1
+
+Canonical Use Cases
+
+Single-link QR
+
+Creator provides a title, destination URL, optional image, styling preferences, and optional embedded logo.
+
+Public scan endpoint returns HTTP 302 to the destination immediately.
+
+A landing page is provisioned behind the scenes for consistency, yet scans skip it since the experience holds exactly one destination. 302 is deliberate for change-friendly behavior; 301 can be selected in the editor once the creator decides to lock a permanent target. Guidance references: search guidance on 301 vs 302. 
+Google for Developers
+
+Multi-link QR
+
+Creator defines any number of destinations. Each destination includes title, URL, and optional image.
+
+Public scan endpoint serves a landing page with the list of destinations. Tapping a card opens the target in the same tab.
+
+Branded QR styling
+
+Creator can change foreground color, background color, gradient (two stops), module style (square, rounded-square, dot), eye style (square, rounded), quiet zone size, and embed a logo in the center.
+
+When a logo is present, the system enforces Error Correction Level H and minimum module size for scanning robustness. Error correction levels per ISO/IEC 18004 and DENSO references. 
+Iteh Standards
++1
+
+Short links
+
+Creator pastes a target URL and optionally chooses a custom slug.
+
+The app returns a short URL and shows basic analytics on the confirmation screen.
+
+Management of short links is available on the same device that created them using a signed client key stored in a first-party cookie. No unique editor URL for short links.
+
+Editor page
+
+Every QR has a private editor URL generated at creation time. The page displays QR styling controls, logo upload, destinations manager, redirect behavior, analytics, and a switch for password protection of the editor page.
+
+The page strongly prompts the user to bookmark. A “Send link to email” button appears if the user wants an emailed copy of the editor URL.
+
+Optional password on the editor page uses Argon2id hashing with salt and sensible memory cost. No password is ever stored in plaintext.
+
+Information Architecture & UX
+
+Global navigation
+
+Header: logo at left, “QR Generator”, “Link Shortener”, “Docs”.
+
+Home page: hero summary of both tools with primary call-to-action buttons; responsive grid; feature highlights; FAQ.
+
+Creation flows
+
+Each tool exposes a clear three-step wizard: Details → Design → Publish.
+
+After publish, the app displays the editor URL for QR (with a visible “Bookmark now” prompt). Short links display the new short URL and a small panel with analytics and a “Manage on this device” control.
+
+Landing pages
+
+Multi-link QR produces a branded landing page with a clean grid of cards (title, image, button). Strong contrast and large targets for touch access.
+
+Responsiveness
+
+Layouts tested against 360×780 mobile and 1080×1920 vertical monitors. All controls reachable with one thumb on common phone sizes. Mantine provides robust theming and component responsiveness. 
+Mantine
+
+Accessibility
+
+WCAG-aligned color contrast checks inside the design step. Keyboard navigation across all controls. Live region announcements on validation failures.
+
+Data Model (PostgreSQL 18)
+
+Conventions
+
+Primary keys: UUIDv7 (time-sortable, random tail) encoded as canonical text. Rationale: good locality for indexes and strong uniqueness. 
+RFC Editor
+
+Timestamps in UTC with timezone column types.
+
+Slugs use base58 to avoid confusing glyphs.
+
+Tables
+
+qr
+
+id, slug, title, mode (values: single, multi), default_destination_url, editor_token_hash, editor_password_hash (nullable), style_id (FK), ecc_level (values: L, M, Q, H), quiet_zone_modules (int), module_style (values: square, rounded, dot), eye_style (values: square, rounded), fg_color, bg_color, gradient_json (nullable), logo_object_key (nullable), logo_size_ratio (decimal), status (values: active, archived), created_at, updated_at, last_published_at.
+
+qr_destination
+
+id, qr_id (FK), title, url, image_object_key (nullable), position, created_at, updated_at.
+
+qr_scan_event
+
+id, qr_id (FK), public_slug_snapshot, user_agent_hash, ip_hash, country_iso (nullable via GeoLite2), city_name (nullable), referrer_domain (nullable), device_category (mobile, tablet, desktop), ts.
+
+short_link
+
+id, slug, target_url, owner_device_key_hash (set at creation on that device), redirect_code (values: 302, 301), created_at, updated_at, status (values: active, archived).
+
+short_click_event
+
+id, short_link_id (FK), same event fields as qr_scan_event.
+
+blocked_url
+
+id, url_hash, reason, source (values: webrisk, manual), created_at.
+
+file_object
+
+id, object_key, mime_type, bytes, width (nullable), height (nullable), created_at, uploader_hint.
+
+URL Design
+
+Public QR scan endpoint: https://{domain}/l/{slug}
+
+Single mode: returns 302 to the destination.
+
+Multi mode: renders the landing page.
+
+Public short link endpoint: https://{domain}/r/{slug}.
+
+Private QR editor page: https://{domain}/e/{editor-token}.
+
+Image and export assets: https://assets.{domain}/{bucket-key} backed by R2.
+
+Validation & Safety
+
+URL screening on save: run Google Web Risk lookup for each destination and short-link target; block known malicious items with clear messaging. 
+Google Cloud
+
+URL normalization: enforce https scheme and punycode handling.
+
+QR robustness
+
+Minimum quiet zone of 4 modules. 
+ISO
+
+With logo present: ECC = H and minimum image size increased; without logo: default ECC = M. Error correction levels per ISO/IEC 18004 and DENSO guidance. 
+Iteh Standards
++1
+
+Color contrast checked against background to meet scanning thresholds.
+
+Privacy
+
+IP addresses treated as personal data under GDPR guidance; store hashes for analytics. 
+GDPR
++2
+Pandectes
++2
+
+Geo lookups performed locally using GeoLite2 database. 
+MaxMind
++1
+
+Feature Set (final)
+
+A. QR creation
+
+Unlimited destinations per QR.
+
+Destination fields: title, URL, optional image.
+
+Styling panel: foreground color, background color, two-stop gradient, module style (square, rounded, dot), eye style (square, rounded), quiet zone modules, embedded logo upload, logo size slider.
+
+Output formats: SVG (primary), PNG (export).
+
+Download panel exposes: SVG, PNG, PDF sheet with safe print margins.
+
+B. Landing pages
+
+Multi-link landing page with card grid, title at top, hero area with QR preview, and easily tappable buttons.
+
+Single-link scan skips the landing page and returns 302 to the target.
+
+All landing pages are responsive and bookmarkable.
+
+C. Short links
+
+Create short links with random slug or custom slug.
+
+Redirect code default 302; creator can switch to 301 when a target is finalized. Google guidance backs the distinction. 
+Google for Developers
+
+Device-bound management via a signed cookie. No unique editor URL for short links.
+
+D. Editor page
+
+Displays the QR, destinations, styling panel, redirect behavior toggle, analytics.
+
+Optional password protection with Argon2id.
+
+“Replace logo” and “Remove logo” controls automatically enforce ECC and quiet zone rules.
+
+E. Analytics
+
+Unique scans, total scans, top destinations (for multi-link), country counts, device breakdown.
+
+Same metrics for short links.
+
+Export CSV from the editor.
+
+F. Governance
+
+Allow manual blocklisting of URLs.
+
+Soft-delete for QR and short links.
+
+API (internal, server-to-client contract)
+
+Endpoints (HTTP JSON with CSRF protection on state-changing calls)
+
+POST /api/qr
+
+Creates a QR with fields above. Returns id, slug, editor_url.
+
+PUT /api/qr/{id}
+
+Updates metadata, styling, destinations, redirect behavior.
+
+POST /api/qr/{id}/publish
+
+Regenerates server-authoritative SVG/PNG and persists to R2.
+
+GET /api/qr/{id}/analytics?range=…
+
+Returns aggregates and time series.
+
+POST /api/short
+
+Creates a short link. Returns the short URL.
+
+PUT /api/short/{id}
+
+Allows updates from the same device via signed cookie.
+
+GET /l/{slug}
+
+Public scan endpoint with cache headers for CDN.
+
+GET /r/{slug}
+
+Public short link endpoint with cache headers for CDN.
+
+Rendering Rules & Quality Gates
+
+QR generation
+
+Server generates SVG as the source of truth using EasyQRCodeJS-NodeJS with styling options and logo overlay to ensure preview and download match the actual scan artifact. 
+npm
+
+Sharp produces PNG derivatives at 512 px and 2048 px for share and print. 
+sharp
+
+PDFKit assembles a single-page sheet with cut-safe margins and print notes. 
+pdfkit.org
+
+Error correction & sizing
+
+Quiet zone fixed at ≥4 modules.
+
+With logo present: ECC = H and minimum physical size increased for print guidance, which aligns with ISO/IEC 18004 and DENSO documentation on recovery capacity. 
+Iteh Standards
++1
+
+Redirect policy
+
+Default 302 for all new items to support safe iteration; an explicit “Make permanent” control switches to 301 when the creator finalizes a target. Guidance: Google Search Central. 
+Google for Developers
+
+Security & Abuse Mitigation
+
+Editor URLs
+
+Secret token uses base58 from UUIDv7 bytes to achieve compact length with high entropy. RFC reference for UUIDv7. 
+RFC Editor
+
+Optional editor page password enforced on every write; stored as Argon2id hash with per-record salt.
+
+Malware/phishing checks
+
+URL screening via Web Risk during creation and update. Block on confirmed threats with a human-readable reason. 
+Google Cloud
+
+Rate limiting
+
+Sliding-window limits by IP and by editor token to prevent brute forcing.
+
+PII handling
+
+IP addresses never stored raw; analytics keeps only salted hashes and country/city from GeoLite2. Treat IP as personal data per GDPR guidance. 
+GDPR
++1
+
+Headers & TLS
+
+HSTS, frame-ancestors self, strict MIME sniffing, content security policy tuned for our own assets.
+
+Non-Functional Requirements
+
+Performance
+
+TTFB under 200 ms for cached public endpoints at the CDN edge.
+
+Landing pages fully interactive under 2 s on mid-tier mobile.
+
+Scalability
+
+Stateless app nodes behind Nginx; assets on R2; PostgreSQL on the host with room for read replicas later if needed.
+
+Availability
+
+Target 99.9% monthly uptime for public scan and short link endpoints.
+
+Observability
+
+Structured logs with request id. Error tally per endpoint. Basic health endpoint for uptime checks.
+
+Installation & Deployment (single host, no containers)
+
+Host OS
+
+Ubuntu 24.04 LTS. LTS lifespan guidance: five years standard security updates with options beyond that. 
+Ubuntu Community Hub
+
+Database
+
+Install PostgreSQL 18 from official packages. Version policy confirms long runway. 
+PostgreSQL
+
+Create a dedicated DB user and database.
+
+Enable WAL archiving for point-in-time recovery.
+
+Nightly physical backup and weekly full logical export.
+
+App runtime
+
+Install Node.js 24 LTS and keep it patched. LTS window through Apr 2028. 
+endoflife.date
++1
+
+Systemd service runs the Next.js server after build.
+
+Nginx terminates TLS and forwards to the app on localhost.
+
+Cloudflare provides DNS, TLS at edge, CDN caching for l/{slug} and r/{slug} responses.
+
+Assets
+
+Configure a Cloudflare R2 bucket with access keys.
+
+Store uploaded logos, generated SVG/PNG, and landing images under organized prefixes.
+
+GeoIP
+
+Sign up for MaxMind GeoLite2, generate a license key, and schedule database updates. 
+MaxMind
++1
+
+Web Risk
+
+Provision project and API key; restrict by IP and referrer; monitor quota. 
+Google Cloud
+
+Operations Runbook
+
+Backups
+
+Daily physical backup of PostgreSQL base directory with WAL segments retained for seven days.
+
+Weekly logical export for portability.
+
+Test restore monthly.
+
+Key rotations
+
+Rotate R2 keys and Web Risk API key every 90 days.
+
+Incident response
+
+On elevated 5xx rates: check app logs, DB connections, and storage availability.
+
+On fraudulent content reports: suspend the offending QR or short link immediately and place the target URL into blocked_url.
+
+Cache strategy
+
+Public scan endpoints respond with Cache-Control: public, max-age=300, stale-while-revalidate=60, which enables safe fast paths while keeping changes visible quickly at the edge.
+
+Copy & Micro-Interactions (high-impact details)
+
+Bookmark prompt on publish: “This is your private editor link. Save it now. Anyone with this link can edit.”
+
+Editor lock hint when switching to 301: “Use permanent code when the target will not change.”
+
+Logo upload helper: “High contrast works best. The system increases fault tolerance when a logo is present.”
+
+Documentation Pages
+
+Docs → Getting started: quick overview and a two-minute flow to first QR.
+
+Docs → Design rules: quiet zone, minimum sizes, color contrast, and error correction references linked to ISO/IEC 18004 and DENSO pages. 
+Iteh Standards
++1
+
+Docs → Safety: Web Risk checks, reporting abusive links. 
+Google Cloud
+
+Docs → Privacy: IP hashing, GeoLite2 usage, retention schedule, and user rights. 
+MaxMind
++1
+
+Acceptance Criteria
+
+Creating a single-link QR and scanning it yields 302 to the destination with QR that passes common mobile scanners on first try.
+
+Creating a multi-link QR yields a branded landing page with cards that load under 2 s on an average LTE connection.
+
+Styling changes in the editor regenerate server-authoritative SVG/PNG and publish successfully to R2.
+
+Logo uploads always switch ECC to H and enforce minimum quiet zone.
+
+Short link creation returns a working short URL immediately with device-bound management visible on that device only.
+
+Web Risk screening blocks malicious destinations and provides a helpful human message.
+
+Editor page password, when set, prevents writes until the correct password is supplied.
+
+Analytics graphs show totals and country breakdown using GeoLite2 lookups and hashed network identifiers.
+
+Accessibility checks pass keyboard navigation and focus management tests across all critical flows.
