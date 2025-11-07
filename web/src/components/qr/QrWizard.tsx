@@ -146,28 +146,46 @@ export function QrWizard({ editorToken }: QrWizardProps) {
   const handleNext = () => setActive((current) => Math.min(current + 1, 2));
   const handleBack = () => setActive((current) => Math.max(current - 1, 0));
 
-  const previewValue = useMemo(() => {
-    const firstDestUrl = destinations[0]?.url;
-    return firstDestUrl || 'https://qrgen.link/demo';
-  }, [destinations.length, destinations[0]?.url]);
-
-  const publish = () => {
-    const editorUrl = `/e/${editorToken}`;
+  // Generate preview slug from title
+  const previewSlug = useMemo(() => {
+    const title = form.values.title;
+    if (!title) return 'demo';
     
-    // Auto-generate slug from title
-    const autoSlug = form.values.title
+    return title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 30) || `qr-${Date.now()}`;
+  }, [form.values.title]);
+
+  // QR code should point to our redirect endpoint
+  const previewValue = useMemo(() => {
+    // Use the actual domain in production, localhost for dev
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    return `${baseUrl}/l/${previewSlug}`;
+  }, [previewSlug]);
+
+  const publish = () => {
+    const editorUrl = `/e/${editorToken}`;
     
-    // Save to localStorage
+    // Auto-generate slug from title (same as preview)
+    const autoSlug = previewSlug;
+    
+    // Save to localStorage with destinations and mode
     saveQRToStorage({
       id: editorToken,
       title: form.values.title,
       slug: autoSlug,
       editorToken,
       editorUrl,
+      mode: effectiveMode,
+      destinations: destinations.map((dest) => ({
+        id: dest.id,
+        title: dest.title || '',
+        url: dest.url || '',
+        position: dest.position,
+        image: dest.image,
+      })),
       createdAt: new Date().toISOString(),
       style: {
         fgColor: style.fgColor,
