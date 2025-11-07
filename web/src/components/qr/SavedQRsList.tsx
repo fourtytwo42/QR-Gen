@@ -62,9 +62,9 @@ export function SavedQRsList() {
                   }}
                 >
                   <QRCode
-                    value={`https://qr-gen.studio/l/${qr.slug}`}
+                    value={`http://localhost:3000/l/${qr.slug}`}
                     fgColor={qr.style.fgColor}
-                    bgColor={qr.style.bgColor}
+                    bgColor="transparent"
                     size={150}
                   />
                 </Box>
@@ -74,8 +74,11 @@ export function SavedQRsList() {
                 <Text fw={600} size="sm" lineClamp={1}>
                   {qr.title}
                 </Text>
+                <Text size="xs" c="dimmed" style={{ fontFamily: 'monospace' }}>
+                  /l/{qr.slug}
+                </Text>
                 <Text size="xs" c="dimmed">
-                  /{qr.slug}
+                  {qr.mode === 'multi' ? `${qr.destinations?.length || 0} destinations` : '1 destination'}
                 </Text>
                 <Text size="xs" c="dimmed">
                   {new Date(qr.createdAt).toLocaleDateString()}
