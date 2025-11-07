@@ -32,9 +32,9 @@ export const theme = createTheme({
   headings: {
     fontFamily: 'var(--font-display), "Space Grotesk", "Inter", sans-serif',
     sizes: {
-      h1: { fontSize: '3.2rem', fontWeight: '600', lineHeight: 1.1 },
-      h2: { fontSize: '2.4rem', fontWeight: '600', lineHeight: 1.15 },
-      h3: { fontSize: '1.8rem', fontWeight: '600', lineHeight: 1.2 },
+      h1: { fontSize: '3.2rem', fontWeight: '600', lineHeight: '1.1' },
+      h2: { fontSize: '2.4rem', fontWeight: '600', lineHeight: '1.15' },
+      h3: { fontSize: '1.8rem', fontWeight: '600', lineHeight: '1.2' },
     },
   },
   colors: {

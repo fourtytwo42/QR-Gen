@@ -25,6 +25,8 @@ import {
 } from '@tabler/icons-react';
 import { SiteShell } from '@/components/layout/SiteShell';
 
+export const dynamic = 'force-dynamic';
+
 const USE_CASES = [
   {
     title: 'Single-link redirect',
@@ -141,19 +143,21 @@ function Hero() {
             campaign hits print.
           </Text>
           <Group>
-            <Button component={Link} href="/qr/new" size="lg" rightSection={<IconBolt size={18} />}>
-              Start a QR
-            </Button>
-            <Button
-              component={Link}
-              href="/short/new"
-              size="lg"
-              variant="outline"
-              color="gray"
-              rightSection={<IconLink size={18} />}
-            >
-              Create short link
-            </Button>
+            <Link href="/qr/new" style={{ textDecoration: 'none' }}>
+              <Button size="lg" rightSection={<IconBolt size={18} />}>
+                Start a QR
+              </Button>
+            </Link>
+            <Link href="/short/new" style={{ textDecoration: 'none' }}>
+              <Button
+                size="lg"
+                variant="outline"
+                color="gray"
+                rightSection={<IconLink size={18} />}
+              >
+                Create short link
+              </Button>
+            </Link>
           </Group>
           <Group gap="xl">
             {HERO_STATS.map((stat) => (

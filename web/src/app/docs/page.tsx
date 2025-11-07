@@ -1,7 +1,9 @@
 import { Metadata } from 'next';
-import { Accordion, Badge, Card, Grid, List, Stack, Text, Title } from '@mantine/core';
+import { Badge, Card, Grid, List, Stack, Text, Title } from '@mantine/core';
 import { docSections } from '@/lib/mockData';
 import { SiteShell } from '@/components/layout/SiteShell';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Docs · QR-Gen Studio',
@@ -44,26 +46,26 @@ export default function DocsPage() {
 
         <Card padding="xl" radius={28}>
           <Title order={3}>Operational runbook (abridged)</Title>
-          <Accordion mt="lg" variant="separated">
-            <Accordion.Item value="backups">
-              <Accordion.Control>Backups & recovery</Accordion.Control>
-              <Accordion.Panel>
+          <Stack gap="md" mt="lg">
+            <Card padding="md" radius="lg" withBorder>
+              <Text fw={600}>Backups & recovery</Text>
+              <Text size="sm" c="dimmed" mt="xs">
                 Nightly physical backup of PostgreSQL base directory with WAL segments retained for seven days. Weekly logical export for portability and monthly test restore drills.
-              </Accordion.Panel>
-            </Accordion.Item>
-            <Accordion.Item value="keys">
-              <Accordion.Control>Key rotation</Accordion.Control>
-              <Accordion.Panel>
+              </Text>
+            </Card>
+            <Card padding="md" radius="lg" withBorder>
+              <Text fw={600}>Key rotation</Text>
+              <Text size="sm" c="dimmed" mt="xs">
                 Rotate Cloudflare R2 keys and Web Risk API credentials every 90 days. Track ownership in your vault and expire old keys immediately after validation.
-              </Accordion.Panel>
-            </Accordion.Item>
-            <Accordion.Item value="incidents">
-              <Accordion.Control>Incident response</Accordion.Control>
-              <Accordion.Panel>
+              </Text>
+            </Card>
+            <Card padding="md" radius="lg" withBorder>
+              <Text fw={600}>Incident response</Text>
+              <Text size="sm" c="dimmed" mt="xs">
                 Elevated 5xx? Inspect app logs, DB connections, and R2 availability. Fraud report? Archive the QR/short link and blocklist the offending URL with a human-friendly reason.
-              </Accordion.Panel>
-            </Accordion.Item>
-          </Accordion>
+              </Text>
+            </Card>
+          </Stack>
         </Card>
       </Stack>
     </SiteShell>
