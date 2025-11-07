@@ -79,11 +79,6 @@ export function QrWizard({ editorToken }: QrWizardProps) {
   const [style, setStyle] = useState<QrStyle>(INITIAL_STYLE);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  
-  // Log on mount only
-  useEffect(() => {
-    console.log('[QrWizard] Component mounted');
-  }, []);
 
   // Handle logo file upload
   const handleLogoUpload = (file: File | null) => {
@@ -162,6 +157,36 @@ export function QrWizard({ editorToken }: QrWizardProps) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     return `${baseUrl}/l/${randomSlug}`;
   }, [randomSlug]);
+
+  // Auto-save to localStorage so the preview QR works immediately
+  useEffect(() => {
+    console.log('[QrWizard] Auto-saving to localStorage...');
+    
+    const qrData = {
+      id: editorToken,
+      title: form.values.title,
+      slug: randomSlug,
+      editorToken,
+      editorUrl: `/e/${editorToken}`,
+      mode: effectiveMode,
+      destinations: destinations.map((dest) => ({
+        id: dest.id,
+        title: dest.title || '',
+        url: dest.url || '',
+        position: dest.position,
+        image: dest.image,
+      })),
+      createdAt: new Date().toISOString(),
+      style: {
+        fgColor: style.fgColor,
+        bgColor: style.bgColor,
+        gradient: style.gradient,
+      },
+    };
+    
+    saveQRToStorage(qrData);
+    console.log('[QrWizard] Auto-saved! Slug:', randomSlug, 'Mode:', effectiveMode);
+  }, [destinations, form.values.title, style, effectiveMode, editorToken, randomSlug]);
 
   const publish = () => {
     const editorUrl = `/e/${editorToken}`;
