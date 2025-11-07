@@ -29,6 +29,11 @@ interface EditorDashboardProps {
 }
 
 export function EditorDashboard({ record }: EditorDashboardProps) {
+  const baseOrigin =
+    record.origin ||
+    (typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+  const normalizedOrigin = baseOrigin.replace(/\/$/, '');
+
   return (
     <Stack gap="xl">
       <Grid gutter="xl" align="stretch">
@@ -43,7 +48,7 @@ export function EditorDashboard({ record }: EditorDashboardProps) {
                   borderRadius: 24,
                 }}
               >
-                <QRCode value={`https://qr-gen.studio/l/${record.slug}`} fgColor={record.style.fgColor} bgColor={record.style.bgColor} size={220} />
+                <QRCode value={`${normalizedOrigin}/l/${record.slug}`} fgColor={record.style.fgColor} bgColor={record.style.bgColor} size={220} />
               </div>
               <Text size="sm" c="dimmed">
                 Preview uses react-qr-code. Production artifact is rendered via EasyQRCodeJS-NodeJS + Sharp so the SVG, PNG, and PDF always match.
@@ -102,6 +107,7 @@ export function EditorDashboard({ record }: EditorDashboardProps) {
             <Table highlightOnHover horizontalSpacing="md" verticalSpacing="md">
               <TableThead>
                 <TableTr>
+                  <TableTh>Image</TableTh>
                   <TableTh>Title</TableTh>
                   <TableTh>URL</TableTh>
                   <TableTh ta="right">Scans</TableTh>
@@ -110,6 +116,19 @@ export function EditorDashboard({ record }: EditorDashboardProps) {
               <TableTbody>
                 {record.destinations.map((destination) => (
                   <TableTr key={destination.id}>
+                    <TableTd>
+                      {destination.image ? (
+                        <img
+                          src={destination.image}
+                          alt={destination.title}
+                          style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 12 }}
+                        />
+                      ) : (
+                        <Text size="xs" c="dimmed">
+                          —
+                        </Text>
+                      )}
+                    </TableTd>
                     <TableTd>{destination.title}</TableTd>
                     <TableTd>
                       <Text size="sm" c="dimmed">

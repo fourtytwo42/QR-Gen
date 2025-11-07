@@ -79,6 +79,13 @@ export function QrWizard({ editorToken }: QrWizardProps) {
   const [style, setStyle] = useState<QrStyle>(INITIAL_STYLE);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+const defaultOrigin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+const [origin, setOrigin] = useState<string>(defaultOrigin);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setOrigin(window.location.origin);
+    }
+  }, []);
 
   // Handle logo file upload
   const handleLogoUpload = (file: File | null) => {
@@ -150,10 +157,9 @@ export function QrWizard({ editorToken }: QrWizardProps) {
 
   // QR code should point to our redirect endpoint with random slug
   const previewValue = useMemo(() => {
-    // Use the actual domain in production, localhost for dev
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    return `${baseUrl}/l/${randomSlug}`;
-  }, [randomSlug]);
+    const base = origin.replace(/\/$/, '');
+    return `${base}/l/${randomSlug}`;
+  }, [origin, randomSlug]);
 
   const saveToDatabase = useCallback(async () => {
     console.log('[QrWizard] ===== SAVING TO DATABASE =====');
@@ -207,12 +213,13 @@ export function QrWizard({ editorToken }: QrWizardProps) {
         destinations: qrData.destinations,
         style: qrData.style,
         password: form.values.password || undefined,
+          origin,
         }),
       });
 
       if (response.ok) {
         console.log('[QrWizard] ✅ Saved to PostgreSQL database!');
-        console.log('[QrWizard] QR URL: http://localhost:3000/l/' + randomSlug);
+        console.log('[QrWizard] QR URL:', `${origin.replace(/\/$/, '')}/l/${randomSlug}`);
       } else {
         const error = await response.json();
         console.error('[QrWizard] ❌ Database save failed:', error);

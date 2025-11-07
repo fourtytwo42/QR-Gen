@@ -15,6 +15,7 @@ export interface CreateQRInput {
   destinations: Array<{ id: string; title: string; url: string; position: number; image?: string }>;
   style: QrStyle;
   password?: string;
+  origin?: string;
 }
 
 export interface CreateQRResult {
@@ -43,6 +44,7 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
     }));
 
     const firstDestUrl = normalizedDestinations[0].url;
+    const baseUrl = (input.origin || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
     // Use the pre-generated slug and editorToken from wizard
     const slug = input.slug;
@@ -136,9 +138,9 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
 
       for (const dest of normalizedDestinations) {
         await client.query(
-          `INSERT INTO qr_destination (qr_id, title, url, position)
-           VALUES ($1, $2, $3, $4)`,
-          [qrId, dest.title, dest.url, dest.position]
+          `INSERT INTO qr_destination (qr_id, title, url, position, image_object_key)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [qrId, dest.title, dest.url, dest.position, dest.image || null]
         );
       }
       console.log('[createQR] Upserted', normalizedDestinations.length, 'destinations');
@@ -147,6 +149,7 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
     });
 
     console.log('[createQR] ✅ Successfully saved to database!');
+    console.log('[createQR] Base URL used:', baseUrl);
 
     revalidatePath('/qr/new');
     revalidatePath(`/l/${slug}`);
@@ -196,7 +199,13 @@ export async function getQRBySlug(slug: string) {
 
     return {
       ...qr,
-      destinations,
+      destinations: destinations.map((dest: any) => ({
+        id: dest.id,
+        title: dest.title,
+        url: dest.url,
+        position: dest.position,
+        image: dest.image_object_key,
+      })),
     };
   } catch (error) {
     console.error('[getQRBySlug] Error:', error);
@@ -226,13 +235,16 @@ export async function getQRByEditorToken(editorToken: string) {
       [qr.id]
     );
 
-    // Get analytics
-    const analytics = await getQRAnalytics(qr.id);
-
     return {
       ...qr,
-      destinations,
-      analytics,
+      destinations: destinations.map((dest: any) => ({
+        id: dest.id,
+        title: dest.title,
+        url: dest.url,
+        position: dest.position,
+        image: dest.image_object_key,
+      })),
+      analytics: await getQRAnalytics(qr.id),
     };
   } catch (error) {
     console.error('Error fetching QR:', error);
@@ -300,7 +312,8 @@ export async function downloadQRAssets(slug: string, format: 'svg' | 'png' | 'pd
       logoSizeRatio: qr.logo_size_ratio,
     };
 
-    const publicUrl = `https://qr-gen.studio/l/${slug}`;
+    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const publicUrl = `${baseUrl}/l/${slug}`;
     const assets = await generateQRAssets({ text: publicUrl, style });
 
     if (format === 'svg') {

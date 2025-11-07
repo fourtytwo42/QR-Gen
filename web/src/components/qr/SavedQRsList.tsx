@@ -9,6 +9,7 @@ import Link from 'next/link';
 
 export function SavedQRsList() {
   const [savedQRs, setSavedQRs] = useState<SavedQR[]>([]);
+  const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
   const refreshQRs = () => {
     const qrs = getSavedQRs();
@@ -73,7 +74,7 @@ export function SavedQRsList() {
                   }}
                 >
                   <QRCode
-                    value={`http://localhost:3000/l/${qr.slug}`}
+                    value={`${origin.replace(/\/$/, '')}/l/${qr.slug}`}
                     fgColor={qr.style.fgColor}
                     bgColor="transparent"
                     size={150}
@@ -86,7 +87,7 @@ export function SavedQRsList() {
                   {qr.title}
                 </Text>
                 <Text size="xs" c="dimmed" style={{ fontFamily: 'monospace' }}>
-                  /l/{qr.slug}
+                  {origin.replace(/\/$/, '')}/l/{qr.slug}
                 </Text>
                 <Text size="xs" c="dimmed">
                   {qr.mode === 'multi' ? `${qr.destinations?.length || 0} destinations` : '1 destination'}

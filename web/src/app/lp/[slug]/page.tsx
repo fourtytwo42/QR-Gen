@@ -50,6 +50,13 @@ export default async function LandingPage({ params }: Props) {
                   style={{ cursor: 'pointer', textDecoration: 'none' }}
                 >
                   <Stack gap="xs">
+                    {dest.image && (
+                      <img
+                        src={dest.image}
+                        alt={dest.title || 'Destination image'}
+                        style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 12 }}
+                      />
+                    )}
                     <Text fw={600} size="lg">{dest.title || 'Untitled'}</Text>
                     <Text size="sm" c="dimmed" style={{ wordBreak: 'break-all' }}>
                       {dest.url}
