@@ -9,11 +9,15 @@ import { revalidatePath } from 'next/cache';
 
 export interface CreateQRInput {
   title: string;
-  slug?: string;
+  slug: string;
+  editorToken: string;
   mode: QrMode;
-  defaultUrl: string;
-  destinations: Array<{ title: string; url: string; position: number }>;
-  style: QrStyle;
+  destinations: Array<{ id: string; title: string; url: string; position: number; image?: string }>;
+  style: {
+    fgColor: string;
+    bgColor: string;
+    gradient?: [string, string];
+  };
   password?: string;
 }
 
@@ -22,7 +26,6 @@ export interface CreateQRResult {
   qrId?: string;
   slug?: string;
   editorToken?: string;
-  editorUrl?: string;
   error?: string;
 }
 
@@ -31,17 +34,17 @@ export interface CreateQRResult {
  */
 export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
   try {
+    console.log('[createQR] Starting with input:', { slug: input.slug, mode: input.mode, destCount: input.destinations.length });
+
     // Validate URLs
-    try {
-      normalizeURL(input.defaultUrl);
-      input.destinations.forEach(d => normalizeURL(d.url));
-    } catch (err) {
-      return { success: false, error: 'Invalid URL format. Please use HTTPS URLs.' };
+    const firstDestUrl = input.destinations[0]?.url;
+    if (!firstDestUrl) {
+      return { success: false, error: 'At least one destination is required' };
     }
 
-    // Generate slug and tokens
-    const slug = input.slug || generateBase58Slug(8);
-    const editorToken = generateEditorToken();
+    // Use the pre-generated slug and editorToken from wizard
+    const slug = input.slug;
+    const editorToken = input.editorToken;
     const editorTokenHash = sha256Hash(editorToken);
 
     // Hash password if provided
@@ -56,67 +59,98 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
         `INSERT INTO qr (
           slug, title, mode, default_destination_url, editor_token_hash, editor_password_hash,
           ecc_level, quiet_zone_modules, module_style, eye_style, fg_color, bg_color,
-          gradient_json, logo_size_ratio, last_published_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+          gradient_json, logo_size_ratio, last_published_at, status
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), 'active')
         RETURNING id`,
         [
           slug,
           input.title,
           input.mode,
-          input.defaultUrl,
+          firstDestUrl, // Use first destination as default
           editorTokenHash,
           passwordHash,
-          input.style.ecc,
-          input.style.quietZone,
-          input.style.moduleStyle,
-          input.style.eyeStyle,
+          'H', // Default ECC to H
+          4,   // Default quiet zone
+          'dot', // Default module style
+          'rounded', // Default eye style
           input.style.fgColor,
           input.style.bgColor,
           input.style.gradient ? JSON.stringify(input.style.gradient) : null,
-          input.style.logoSizeRatio,
+          0.22, // Default logo size
         ]
       );
 
       const qrId = qrResult.rows[0].id;
+      console.log('[createQR] Created QR with ID:', qrId);
 
       // Insert destinations
-      if (input.mode === 'multi' && input.destinations.length > 0) {
-        for (const dest of input.destinations) {
-          await client.query(
-            `INSERT INTO qr_destination (qr_id, title, url, position)
-             VALUES ($1, $2, $3, $4)`,
-            [qrId, dest.title, dest.url, dest.position]
-          );
-        }
+      for (const dest of input.destinations) {
+        await client.query(
+          `INSERT INTO qr_destination (qr_id, title, url, position)
+           VALUES ($1, $2, $3, $4)`,
+          [qrId, dest.title, dest.url, dest.position]
+        );
       }
+      console.log('[createQR] Inserted', input.destinations.length, 'destinations');
 
       return { qrId, slug };
     });
 
-    // Generate QR assets
-    const publicUrl = `https://qr-gen.studio/l/${slug}`;
-    await generateQRAssets({
-      text: publicUrl,
-      style: input.style,
-    });
-
-    const editorUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/e/${editorToken}`;
+    console.log('[createQR] ✅ Successfully saved to database!');
 
     revalidatePath('/qr/new');
+    revalidatePath(`/l/${slug}`);
+    revalidatePath(`/e/${editorToken}`);
 
     return {
       success: true,
       qrId: result.qrId,
       slug: result.slug,
       editorToken,
-      editorUrl,
     };
   } catch (error) {
-    console.error('Error creating QR:', error);
+    console.error('[createQR] ❌ Error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create QR code',
     };
+  }
+}
+
+/**
+ * Get QR by slug (for public redirect)
+ */
+export async function getQRBySlug(slug: string) {
+  try {
+    console.log('[getQRBySlug] Looking for slug:', slug);
+    
+    const qr = await queryOne<any>(
+      `SELECT * FROM qr WHERE slug = $1 AND status = 'active'`,
+      [slug]
+    );
+
+    if (!qr) {
+      console.log('[getQRBySlug] QR not found');
+      return null;
+    }
+
+    console.log('[getQRBySlug] Found QR:', qr.id);
+
+    // Get destinations
+    const destinations = await query<any>(
+      `SELECT * FROM qr_destination WHERE qr_id = $1 ORDER BY position`,
+      [qr.id]
+    );
+
+    console.log('[getQRBySlug] Found', destinations.length, 'destinations');
+
+    return {
+      ...qr,
+      destinations,
+    };
+  } catch (error) {
+    console.error('[getQRBySlug] Error:', error);
+    return null;
   }
 }
 
@@ -142,9 +176,13 @@ export async function getQRByEditorToken(editorToken: string) {
       [qr.id]
     );
 
+    // Get analytics
+    const analytics = await getQRAnalytics(qr.id);
+
     return {
       ...qr,
       destinations,
+      analytics,
     };
   } catch (error) {
     console.error('Error fetching QR:', error);

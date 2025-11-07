@@ -3,14 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Center, Loader, Stack, Text } from '@mantine/core';
-import { getSavedQRs } from '@/lib/localStorage';
-
-// Declare global window.qrDatabase
-declare global {
-  interface Window {
-    qrDatabase?: Record<string, any>;
-  }
-}
+import { getQRBySlug } from '@/app/actions/qr-actions';
 
 type Props = {
   params: { slug: string };
@@ -22,80 +15,63 @@ export default function QRRedirectPage({ params }: Props) {
   const [status, setStatus] = useState<string>('Scanning QR code...');
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    const handleRedirect = async () => {
+      console.log('[QR Redirect] =============================');
+      console.log('[QR Redirect] Looking for slug:', slug);
 
-    console.log('[QR Redirect] =============================');
-    console.log('[QR Redirect] Looking for slug:', slug);
-    console.log('[QR Redirect] Slug type:', typeof slug);
-    console.log('[QR Redirect] Slug length:', slug?.length);
+      // Fetch from PostgreSQL database
+      const qrData = await getQRBySlug(slug);
 
-    // Try window.qrDatabase first (in-memory, works across routes in same session)
-    let qrData = null;
-    let savedQRs: any[] = [];
-    
-    if (window.qrDatabase && window.qrDatabase[slug]) {
-      console.log('[QR Redirect] ✅ Found in window.qrDatabase!');
-      qrData = window.qrDatabase[slug];
-    } else {
-      // Fallback to localStorage
-      savedQRs = getSavedQRs();
-      console.log('[QR Redirect] Found', savedQRs.length, 'QRs in localStorage');
-      console.log('[QR Redirect] All slugs:', savedQRs.map(qr => qr.slug));
-      qrData = savedQRs.find((qr) => qr.slug === slug);
-    }
+      if (!qrData) {
+        console.error('[QR Redirect] ❌ QR NOT FOUND in database!');
+        setStatus('QR code not found. Redirecting...');
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
+        return;
+      }
 
-    if (!qrData) {
-      console.error('[QR Redirect] ❌ QR NOT FOUND!');
-      console.error('[QR Redirect] Searched for:', slug);
-      console.error('[QR Redirect] window.qrDatabase keys:', window.qrDatabase ? Object.keys(window.qrDatabase) : 'undefined');
-      console.error('[QR Redirect] localStorage slugs:', savedQRs.map(qr => ({
-        slug: qr.slug,
-        title: qr.title,
-        id: qr.id
-      })));
-      setStatus('QR code not found. Redirecting...');
+      console.log('[QR Redirect] ✅ Found QR in database:', qrData.title);
+      console.log('[QR Redirect] Mode:', qrData.mode);
+      console.log('[QR Redirect] Destinations:', qrData.destinations?.length);
+
+      // Single mode: redirect to first destination (or default_destination_url)
+      if (qrData.mode === 'single') {
+        const targetUrl = qrData.default_destination_url || qrData.destinations?.[0]?.url;
+        if (targetUrl) {
+          console.log('[QR Redirect] Single mode - redirecting to:', targetUrl);
+          setStatus(`Redirecting...`);
+          window.location.href = targetUrl;
+          return;
+        }
+      }
+
+      // Multi mode: redirect to landing page
+      if (qrData.mode === 'multi' && qrData.destinations && qrData.destinations.length > 1) {
+        console.log('[QR Redirect] Multi mode - redirecting to landing page');
+        setStatus('Loading landing page...');
+        router.push(`/lp/${slug}`);
+        return;
+      }
+
+      // Fallback
+      const targetUrl = qrData.default_destination_url || qrData.destinations?.[0]?.url;
+      if (targetUrl) {
+        console.log('[QR Redirect] Fallback - redirecting to:', targetUrl);
+        setStatus('Redirecting...');
+        window.location.href = targetUrl;
+        return;
+      }
+
+      // No valid destinations
+      console.error('[QR Redirect] No valid destination URL');
+      setStatus('No destination configured');
       setTimeout(() => {
         router.push('/');
       }, 2000);
-      return;
-    }
+    };
 
-    console.log('[QR Redirect] Found QR:', qrData);
-    console.log('[QR Redirect] Mode:', qrData.mode);
-    console.log('[QR Redirect] Destinations:', qrData.destinations);
-
-    // Single mode: redirect to first destination
-    if (qrData.mode === 'single' && qrData.destinations && qrData.destinations.length > 0) {
-      const targetUrl = qrData.destinations[0].url;
-      console.log('[QR Redirect] Single mode - redirecting to:', targetUrl);
-      setStatus(`Redirecting to ${targetUrl}...`);
-      window.location.href = targetUrl;
-      return;
-    }
-
-    // Multi mode: redirect to landing page
-    if (qrData.mode === 'multi' && qrData.destinations && qrData.destinations.length > 1) {
-      console.log('[QR Redirect] Multi mode - redirecting to landing page');
-      setStatus('Loading landing page...');
-      router.push(`/lp/${slug}`);
-      return;
-    }
-
-    // Fallback: if we have destinations but mode is unclear
-    if (qrData.destinations && qrData.destinations.length > 0) {
-      const targetUrl = qrData.destinations[0].url;
-      console.log('[QR Redirect] Fallback - redirecting to first destination:', targetUrl);
-      setStatus(`Redirecting...`);
-      window.location.href = targetUrl;
-      return;
-    }
-
-    // No valid destinations
-    console.log('[QR Redirect] No valid destinations');
-    setStatus('No destination configured');
-    setTimeout(() => {
-      router.push('/');
-    }, 2000);
+    handleRedirect();
   }, [slug, router]);
 
   return (

@@ -36,6 +36,7 @@ import { IconCheck, IconPlus, IconShieldLock, IconTrash, IconVocabulary } from '
 import QRCode from 'react-qr-code';
 import { Destination, QrMode, QrStyle, QrWizardValues } from '@/lib/types';
 import { saveQRToStorage, getSavedQRs } from '@/lib/localStorage';
+import { createQR } from '@/app/actions/qr-actions';
 
 const MODULE_OPTIONS: QrStyle['moduleStyle'][] = ['square', 'rounded', 'dot'];
 const EYE_STYLES: QrStyle['eyeStyle'][] = ['square', 'rounded'];
@@ -163,8 +164,8 @@ export function QrWizard({ editorToken }: QrWizardProps) {
     return `${baseUrl}/l/${randomSlug}`;
   }, [randomSlug]);
 
-  const saveToLocalStorage = useCallback(async () => {
-    console.log('[QrWizard] ===== SAVING =====');
+  const saveToDatabase = useCallback(async () => {
+    console.log('[QrWizard] ===== SAVING TO DATABASE =====');
     console.log('[QrWizard] Random Slug:', randomSlug);
     console.log('[QrWizard] Editor Token:', editorToken);
     console.log('[QrWizard] Mode:', effectiveMode);
@@ -192,78 +193,70 @@ export function QrWizard({ editorToken }: QrWizardProps) {
       },
     };
     
-    // Save to localStorage (for UI display)
+    // Save to localStorage (for UI display in browser)
     saveQRToStorage(qrData);
     console.log('[QrWizard] ✅ Saved to localStorage!');
     
-    // ALSO save to a global window variable that persists across routes
+    // Save to window.qrDatabase (for same-session lookups)
     if (typeof window !== 'undefined') {
       if (!window.qrDatabase) {
         window.qrDatabase = {};
       }
       window.qrDatabase[randomSlug] = qrData;
       console.log('[QrWizard] ✅ Saved to window.qrDatabase!');
-      console.log('[QrWizard] QR URL: http://localhost:3000/l/' + randomSlug);
     }
-  }, [editorToken, form.values.title, randomSlug, effectiveMode, destinations, style]);
+    
+    // Save to PostgreSQL database (for cross-device persistence)
+    try {
+      const result = await createQR({
+        title: form.values.title,
+        slug: randomSlug,
+        editorToken,
+        mode: effectiveMode,
+        destinations: qrData.destinations,
+        style: qrData.style,
+        password: form.values.password || undefined,
+      });
+      
+      if (result.success) {
+        console.log('[QrWizard] ✅ Saved to PostgreSQL database!');
+        console.log('[QrWizard] QR URL: http://localhost:3000/l/' + randomSlug);
+      } else {
+        console.error('[QrWizard] ❌ Database save failed:', result.error);
+        notifications.show({
+          title: 'Warning',
+          message: 'Saved locally but database save failed. QR may not work from other devices.',
+          color: 'yellow',
+        });
+      }
+    } catch (dbError) {
+      console.error('[QrWizard] ❌ Database error:', dbError);
+    }
+  }, [editorToken, form.values.title, form.values.password, randomSlug, effectiveMode, destinations, style]);
 
   const handleNext = () => {
-    // Save to localStorage when moving from step 0 (Destinations) to step 1 (Design)
+    // Save to database when moving from step 0 (Destinations) to step 1 (Design)
     if (active === 0) {
-      saveToLocalStorage();
+      saveToDatabase();
     }
     setActive((current) => Math.min(current + 1, 2));
   };
   
   const handleBack = () => setActive((current) => Math.max(current - 1, 0));
 
-  // Save when entering Design step so preview QR works
-  useEffect(() => {
-    // When user enters step 1 (Design), save ONCE so preview QR works
-    if (active === 1 && !hasSavedForPreview.current) {
-      console.log('[QrWizard] Entered Design step - saving for preview...');
-      saveToLocalStorage();
-      hasSavedForPreview.current = true;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]); // Only depend on active, not saveToLocalStorage
+  // Already saved when clicking "Continue to design" - no need for extra save here
 
-  const publish = () => {
+  const publish = async () => {
     const editorUrl = `/e/${editorToken}`;
     
-    // Use the random slug generated on mount
-    const qrSlug = randomSlug;
+    console.log('[Publish] Starting final publish...');
     
-    console.log('[Publish] QR Slug:', qrSlug);
-    console.log('[Publish] Editor Token:', editorToken);
-    console.log('[Publish] QR URL will be:', `http://localhost:3000/l/${qrSlug}`);
-    
-    // Save to localStorage with destinations and mode
-    saveQRToStorage({
-      id: editorToken,
-      title: form.values.title,
-      slug: qrSlug,
-      editorToken,
-      editorUrl,
-      mode: effectiveMode,
-      destinations: destinations.map((dest) => ({
-        id: dest.id,
-        title: dest.title || '',
-        url: dest.url || '',
-        position: dest.position,
-        image: dest.image,
-      })),
-      createdAt: new Date().toISOString(),
-      style: {
-        fgColor: style.fgColor,
-        bgColor: style.bgColor,
-        gradient: style.gradient,
-      },
-    });
+    // Save to database (this also saves to localStorage)
+    await saveToDatabase();
     
     notifications.show({
       title: 'QR Code Published!',
-      message: 'Bookmark your editor URL. Redirecting...',
+      message: 'Saved to database. Redirecting to editor...',
       icon: <IconCheck size={16} />,
       autoClose: 3000,
     });
@@ -375,19 +368,7 @@ export function QrWizard({ editorToken }: QrWizardProps) {
               <Button variant="default" onClick={handleBack} disabled={active === 0}>
                 Back
               </Button>
-              <Group gap="xs">
-                <Button variant="light" onClick={() => {
-                  saveToLocalStorage();
-                  notifications.show({
-                    title: 'Saved!',
-                    message: `QR saved with slug: ${randomSlug}`,
-                    color: 'green',
-                  });
-                }}>
-                  💾 Save Now (Debug)
-                </Button>
-                <Button onClick={handleNext}>Continue to design</Button>
-              </Group>
+              <Button onClick={handleNext}>Continue to design</Button>
             </Group>
           </Stack>
         </Card>

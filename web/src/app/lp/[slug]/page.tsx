@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Card, Stack, Text, Button, Container, Title, Center, Loader } from '@mantine/core';
 import { IconExternalLink, IconAlertCircle } from '@tabler/icons-react';
-import { getSavedQRs, SavedQR } from '@/lib/localStorage';
+import { getQRBySlug } from '@/app/actions/qr-actions';
 
 interface Props {
   params: { slug: string };
@@ -16,27 +16,28 @@ interface Props {
 export default function LandingPage({ params }: Props) {
   const { slug } = params;
   const router = useRouter();
-  const [qrData, setQrData] = useState<SavedQR | null>(null);
+  const [qrData, setQrData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    const fetchData = async () => {
+      console.log('[Landing Page] Fetching QR from database for slug:', slug);
 
-    console.log('[Landing Page] Looking for slug:', slug);
+      // Fetch QR from PostgreSQL database
+      const qr = await getQRBySlug(slug);
 
-    // Find QR by slug in localStorage
-    const savedQRs = getSavedQRs();
-    const qr = savedQRs.find((q) => q.slug === slug);
+      if (!qr) {
+        console.log('[Landing Page] QR not found in database');
+        setLoading(false);
+        return;
+      }
 
-    if (!qr) {
-      console.log('[Landing Page] QR not found');
+      console.log('[Landing Page] ✅ Found QR in database:', qr.title);
+      setQrData(qr);
       setLoading(false);
-      return;
-    }
+    };
 
-    console.log('[Landing Page] Found QR:', qr);
-    setQrData(qr);
-    setLoading(false);
+    fetchData();
   }, [slug]);
 
   if (loading) {
@@ -73,8 +74,8 @@ export default function LandingPage({ params }: Props) {
         <Stack gap="md" w="100%">
           {qrData.destinations && qrData.destinations.length > 0 ? (
             qrData.destinations
-              .sort((a, b) => a.position - b.position)
-              .map((dest) => (
+              .sort((a: any, b: any) => a.position - b.position)
+              .map((dest: any) => (
                 <Card 
                   key={dest.id} 
                   padding="lg" 
