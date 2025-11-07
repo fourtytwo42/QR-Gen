@@ -44,6 +44,11 @@ const INITIAL_STYLE: QrStyle = {
   logoSizeRatio: 0.22,
 };
 
+const SLIDER_MARKS = [
+  { value: 0.18, label: 'Safe' },
+  { value: 0.28, label: 'Max print' },
+].filter(m => m && m.value !== null && m.value !== undefined);
+
 function createDestination(position: number): Destination {
   return {
     id: `dest-${Date.now()}-${Math.random()}`,
@@ -55,6 +60,11 @@ function createDestination(position: number): Destination {
 }
 
 export function QrWizard() {
+  console.log('[QrWizard] Initializing component');
+  console.log('[QrWizard] MODULE_OPTIONS:', MODULE_OPTIONS);
+  console.log('[QrWizard] EYE_STYLES:', EYE_STYLES);
+  console.log('[QrWizard] SLIDER_MARKS:', SLIDER_MARKS);
+  
   const [active, setActive] = useState(0);
   const [destinations, setDestinations] = useState<Destination[]>([
     {
@@ -66,6 +76,8 @@ export function QrWizard() {
     },
   ]);
   const [style, setStyle] = useState<QrStyle>(INITIAL_STYLE);
+  
+  console.log('[QrWizard] State initialized. Active:', active, 'Style:', style);
 
   const form = useForm<QrWizardValues>({
     initialValues: {
@@ -224,11 +236,19 @@ export function QrWizard() {
                   <SegmentedControl
                   fullWidth
                   color="aurora"
-                  data={MODULE_OPTIONS.map((option) => ({ label: option, value: option }))}
-                  value={style.moduleStyle}
-                  onChange={(value) =>
-                    setStyle((prev) => ({ ...prev, moduleStyle: value as QrStyle['moduleStyle'] }))
-                  }
+                  data={MODULE_OPTIONS.filter(Boolean).map((option) => {
+                    console.log('[SegmentedControl] Mapping option:', option);
+                    if (!option) {
+                      console.error('[SegmentedControl] NULL OPTION DETECTED!');
+                      return { label: 'square', value: 'square' };
+                    }
+                    return { label: option, value: option };
+                  })}
+                  value={style.moduleStyle || 'square'}
+                  onChange={(value) => {
+                    console.log('[SegmentedControl] onChange value:', value);
+                    setStyle((prev) => ({ ...prev, moduleStyle: value as QrStyle['moduleStyle'] }));
+                  }}
                   aria-label="Module style"
                 />
                 </Stack>
@@ -239,11 +259,19 @@ export function QrWizard() {
                   <SegmentedControl
                   fullWidth
                   color="aurora"
-                  data={EYE_STYLES.map((option) => ({ label: option, value: option }))}
-                  value={style.eyeStyle}
-                  onChange={(value) =>
-                    setStyle((prev) => ({ ...prev, eyeStyle: value as QrStyle['eyeStyle'] }))
-                  }
+                  data={EYE_STYLES.filter(Boolean).map((option) => {
+                    console.log('[SegmentedControl Eye] Mapping option:', option);
+                    if (!option) {
+                      console.error('[SegmentedControl Eye] NULL OPTION DETECTED!');
+                      return { label: 'square', value: 'square' };
+                    }
+                    return { label: option, value: option };
+                  })}
+                  value={style.eyeStyle || 'square'}
+                  onChange={(value) => {
+                    console.log('[SegmentedControl Eye] onChange value:', value);
+                    setStyle((prev) => ({ ...prev, eyeStyle: value as QrStyle['eyeStyle'] }));
+                  }}
                   aria-label="Eye style"
                 />
                 </Stack>
@@ -256,15 +284,15 @@ export function QrWizard() {
                 />
                 <Slider
                   label="Logo size"
-                  value={style.logoSizeRatio}
-                  onChange={(value) => setStyle((prev) => ({ ...prev, logoSizeRatio: value }))}
+                  value={style.logoSizeRatio || 0.22}
+                  onChange={(value) => {
+                    console.log('[Slider] onChange value:', value);
+                    setStyle((prev) => ({ ...prev, logoSizeRatio: value }));
+                  }}
                   min={0.15}
                   max={0.35}
                   step={0.01}
-                  marks={[
-                    { value: 0.18, label: 'Safe' },
-                    { value: 0.28, label: 'Max print' },
-                  ]}
+                  marks={SLIDER_MARKS}
                 />
                 <Switch
                   label="Embedded logo"

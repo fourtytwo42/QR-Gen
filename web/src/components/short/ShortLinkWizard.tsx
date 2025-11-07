@@ -8,6 +8,7 @@ import { IconCheck, IconLinkPlus } from '@tabler/icons-react';
 import { ShortLinkConfig } from '@/lib/types';
 
 export function ShortLinkWizard() {
+  console.log('[ShortLinkWizard] Initializing component');
   const [deviceLock, setDeviceLock] = useState(true);
   const form = useForm<ShortLinkConfig>({
     initialValues: {
@@ -51,8 +52,11 @@ export function ShortLinkWizard() {
             <SegmentedControl
               fullWidth
               color="aurora"
-              value={String(form.values.redirectCode)}
-              onChange={(value) => form.setFieldValue('redirectCode', Number(value) as 301 | 302)}
+              value={String(form.values.redirectCode || 302)}
+              onChange={(value) => {
+                console.log('[ShortLink SegmentedControl] onChange value:', value);
+                form.setFieldValue('redirectCode', Number(value) as 301 | 302);
+              }}
               data={[
                 { label: '302 · Flexible', value: '302' },
                 { label: '301 · Permanent', value: '301' },
