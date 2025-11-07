@@ -46,7 +46,7 @@ const INITIAL_STYLE: QrStyle = {
 
 function createDestination(position: number): Destination {
   return {
-    id: crypto.randomUUID(),
+    id: `dest-${Date.now()}-${Math.random()}`,
     title: '',
     url: '',
     position,
@@ -58,7 +58,7 @@ export function QrWizard() {
   const [active, setActive] = useState(0);
   const [destinations, setDestinations] = useState<Destination[]>([
     {
-      id: crypto.randomUUID(),
+      id: 'initial-dest',
       title: 'Launch timeline',
       url: 'https://launch.qr-gen.studio/roadmap',
       position: 0,
