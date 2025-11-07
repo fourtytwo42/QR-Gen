@@ -1,64 +1,26 @@
-'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Alert, Card, Stack, Text, Button, Container, Title, Center, Loader } from '@mantine/core';
+import { Alert, Card, Stack, Text, Button, Container, Title } from '@mantine/core';
 import { IconExternalLink, IconAlertCircle } from '@tabler/icons-react';
 import { getQRBySlug } from '@/app/actions/qr-actions';
+import { notFound } from 'next/navigation';
 
 interface Props {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 /**
  * Multi-link landing page
  */
-export default function LandingPage({ params }: Props) {
-  const { slug } = params;
-  const router = useRouter();
-  const [qrData, setQrData] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+export default async function LandingPage({ params }: Props) {
+  const { slug } = await params;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      console.log('[Landing Page] Fetching QR from database for slug:', slug);
+  console.log('[Landing Page] Fetching QR from database for slug:', slug);
 
-      // Fetch QR from PostgreSQL database
-      const qr = await getQRBySlug(slug);
-
-      if (!qr) {
-        console.log('[Landing Page] QR not found in database');
-        setLoading(false);
-        return;
-      }
-
-      console.log('[Landing Page] ✅ Found QR in database:', qr.title);
-      setQrData(qr);
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [slug]);
-
-  if (loading) {
-    return (
-      <Center style={{ minHeight: '100vh' }}>
-        <Stack align="center" gap="lg">
-          <Loader size="xl" />
-          <Text c="dimmed">Loading...</Text>
-        </Stack>
-      </Center>
-    );
-  }
+  const qrData = await getQRBySlug(slug);
 
   if (!qrData) {
-    return (
-      <Container size="sm" py="xl">
-        <Alert icon={<IconAlertCircle size={16} />} title="Not Found" color="red">
-          This QR code could not be found.
-        </Alert>
-      </Container>
-    );
+    console.log('[Landing Page] QR not found in database');
+    notFound();
   }
 
   return (

@@ -1,7 +1,7 @@
 'use server';
 
 import { query, queryOne, transaction } from '@/lib/db';
-import { generateBase58Slug, generateEditorToken, sha256Hash, hashPassword, normalizeURL } from '@/lib/utils';
+import { sha256Hash, hashPassword, normalizeURL } from '@/lib/utils';
 import { generateQRAssets } from '@/lib/qr-generator';
 import { generateQRPDF } from '@/lib/pdf-generator';
 import { QrStyle, QrMode, Destination } from '@/lib/types';
@@ -13,11 +13,7 @@ export interface CreateQRInput {
   editorToken: string;
   mode: QrMode;
   destinations: Array<{ id: string; title: string; url: string; position: number; image?: string }>;
-  style: {
-    fgColor: string;
-    bgColor: string;
-    gradient?: [string, string];
-  };
+  style: QrStyle;
   password?: string;
 }
 
@@ -37,10 +33,16 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
     console.log('[createQR] Starting with input:', { slug: input.slug, mode: input.mode, destCount: input.destinations.length });
 
     // Validate URLs
-    const firstDestUrl = input.destinations[0]?.url;
-    if (!firstDestUrl) {
+    if (!input.destinations.length) {
       return { success: false, error: 'At least one destination is required' };
     }
+
+    const normalizedDestinations = input.destinations.map((dest) => ({
+      ...dest,
+      url: normalizeURL(dest.url),
+    }));
+
+    const firstDestUrl = normalizedDestinations[0].url;
 
     // Use the pre-generated slug and editorToken from wizard
     const slug = input.slug;
@@ -69,14 +71,14 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
           firstDestUrl, // Use first destination as default
           editorTokenHash,
           passwordHash,
-          'H', // Default ECC to H
-          4,   // Default quiet zone
-          'dot', // Default module style
-          'rounded', // Default eye style
+          input.style.ecc,
+          input.style.quietZone,
+          input.style.moduleStyle,
+          input.style.eyeStyle,
           input.style.fgColor,
           input.style.bgColor,
           input.style.gradient ? JSON.stringify(input.style.gradient) : null,
-          0.22, // Default logo size
+          input.style.logoSizeRatio,
         ]
       );
 
@@ -84,14 +86,14 @@ export async function createQR(input: CreateQRInput): Promise<CreateQRResult> {
       console.log('[createQR] Created QR with ID:', qrId);
 
       // Insert destinations
-      for (const dest of input.destinations) {
+      for (const dest of normalizedDestinations) {
         await client.query(
           `INSERT INTO qr_destination (qr_id, title, url, position)
            VALUES ($1, $2, $3, $4)`,
           [qrId, dest.title, dest.url, dest.position]
         );
       }
-      console.log('[createQR] Inserted', input.destinations.length, 'destinations');
+      console.log('[createQR] Inserted', normalizedDestinations.length, 'destinations');
 
       return { qrId, slug };
     });

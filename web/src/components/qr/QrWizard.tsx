@@ -1,13 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-// Declare global window.qrDatabase
-declare global {
-  interface Window {
-    qrDatabase?: Record<string, any>;
-  }
-}
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Badge,
   Box,
@@ -35,8 +28,7 @@ import { notifications } from '@mantine/notifications';
 import { IconCheck, IconPlus, IconShieldLock, IconTrash, IconVocabulary } from '@tabler/icons-react';
 import QRCode from 'react-qr-code';
 import { Destination, QrMode, QrStyle, QrWizardValues } from '@/lib/types';
-import { saveQRToStorage, getSavedQRs } from '@/lib/localStorage';
-import { createQR } from '@/app/actions/qr-actions';
+import { saveQRToStorage } from '@/lib/localStorage';
 
 const MODULE_OPTIONS: QrStyle['moduleStyle'][] = ['square', 'rounded', 'dot'];
 const EYE_STYLES: QrStyle['eyeStyle'][] = ['square', 'rounded'];
@@ -87,7 +79,6 @@ export function QrWizard({ editorToken }: QrWizardProps) {
   const [style, setStyle] = useState<QrStyle>(INITIAL_STYLE);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const hasSavedForPreview = useRef(false);
 
   // Handle logo file upload
   const handleLogoUpload = (file: File | null) => {
@@ -190,6 +181,12 @@ export function QrWizard({ editorToken }: QrWizardProps) {
         fgColor: style.fgColor,
         bgColor: style.bgColor,
         gradient: style.gradient,
+        moduleStyle: style.moduleStyle,
+        eyeStyle: style.eyeStyle,
+        quietZone: style.quietZone,
+        ecc: style.ecc,
+        withLogo: style.withLogo,
+        logoSizeRatio: style.logoSizeRatio,
       },
     };
     
@@ -197,18 +194,12 @@ export function QrWizard({ editorToken }: QrWizardProps) {
     saveQRToStorage(qrData);
     console.log('[QrWizard] ✅ Saved to localStorage!');
     
-    // Save to window.qrDatabase (for same-session lookups)
-    if (typeof window !== 'undefined') {
-      if (!window.qrDatabase) {
-        window.qrDatabase = {};
-      }
-      window.qrDatabase[randomSlug] = qrData;
-      console.log('[QrWizard] ✅ Saved to window.qrDatabase!');
-    }
-    
     // Save to PostgreSQL database (for cross-device persistence)
     try {
-      const result = await createQR({
+      const response = await fetch('/api/qr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
         title: form.values.title,
         slug: randomSlug,
         editorToken,
@@ -216,13 +207,15 @@ export function QrWizard({ editorToken }: QrWizardProps) {
         destinations: qrData.destinations,
         style: qrData.style,
         password: form.values.password || undefined,
+        }),
       });
-      
-      if (result.success) {
+
+      if (response.ok) {
         console.log('[QrWizard] ✅ Saved to PostgreSQL database!');
         console.log('[QrWizard] QR URL: http://localhost:3000/l/' + randomSlug);
       } else {
-        console.error('[QrWizard] ❌ Database save failed:', result.error);
+        const error = await response.json();
+        console.error('[QrWizard] ❌ Database save failed:', error);
         notifications.show({
           title: 'Warning',
           message: 'Saved locally but database save failed. QR may not work from other devices.',
@@ -234,10 +227,10 @@ export function QrWizard({ editorToken }: QrWizardProps) {
     }
   }, [editorToken, form.values.title, form.values.password, randomSlug, effectiveMode, destinations, style]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Save to database when moving from step 0 (Destinations) to step 1 (Design)
     if (active === 0) {
-      saveToDatabase();
+      await saveToDatabase();
     }
     setActive((current) => Math.min(current + 1, 2));
   };
