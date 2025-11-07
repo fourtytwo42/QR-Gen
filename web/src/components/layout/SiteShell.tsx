@@ -100,13 +100,11 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                 {NAV_LINKS.map(renderNavLink)}
                 <Divider orientation="vertical" color="rgba(255,255,255,0.15)" />
                 <Group gap="xs">
-                  <Button
-                    component={Link}
-                    href="/qr/new"
-                    rightSection={<IconArrowRight size={16} />}
-                  >
-                    Launch Studio
-                  </Button>
+                  <Link href="/qr/new" style={{ textDecoration: 'none' }}>
+                    <Button rightSection={<IconArrowRight size={16} />}>
+                      Launch Studio
+                    </Button>
+                  </Link>
                   <ActionIcon
                     component="a"
                     href="https://github.com"
@@ -129,9 +127,11 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
           {!isDesktop && opened && (
             <Stack gap="md" mt="lg" pt="md" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               {NAV_LINKS.map(renderNavLink)}
-              <Button component={Link} href="/qr/new" rightSection={<IconArrowRight size={16} />}>
-                Launch Studio
-              </Button>
+              <Link href="/qr/new" style={{ textDecoration: 'none' }}>
+                <Button rightSection={<IconArrowRight size={16} />} fullWidth>
+                  Launch Studio
+                </Button>
+              </Link>
             </Stack>
           )}
         </Paper>

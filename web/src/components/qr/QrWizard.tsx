@@ -9,6 +9,7 @@ import {
   ColorInput,
   Divider,
   Grid,
+  GridCol,
   Group,
   NumberInput,
   Radio,
@@ -197,7 +198,7 @@ export function QrWizard() {
 
       {active === 1 && (
         <Grid gutter="xl">
-          <Grid.Col span={{ base: 12, md: 7 }}>
+          <GridCol span={{ base: 12, md: 7 }}>
             <Card radius={28} padding="xl">
               <Stack gap="lg">
                 <Group grow>
@@ -284,8 +285,8 @@ export function QrWizard() {
                 )}
               </Stack>
             </Card>
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, md: 5 }}>
+          </GridCol>
+          <GridCol span={{ base: 12, md: 5 }}>
             <Card radius={28} padding="xl">
               <Stack gap="lg" align="center">
                 <Box
@@ -311,15 +312,15 @@ export function QrWizard() {
                 and ISO/IEC 18004 minimums.
               </Text>
             </Card>
-          </Grid.Col>
-          <Grid.Col span={12}>
+          </GridCol>
+          <GridCol span={12}>
             <Group justify="space-between">
               <Button variant="default" onClick={handleBack}>
                 Back
               </Button>
               <Button onClick={handleNext}>Continue to publish</Button>
             </Group>
-          </Grid.Col>
+          </GridCol>
         </Grid>
       )}
 

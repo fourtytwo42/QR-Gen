@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { Badge, Card, Grid, List, Stack, Text, Title } from '@mantine/core';
+import { Badge, Card, Grid, GridCol, List, ListItem, Stack, Text, Title } from '@mantine/core';
 import { docSections } from '@/lib/mockData';
 import { SiteShell } from '@/components/layout/SiteShell';
 
@@ -28,7 +28,7 @@ export default function DocsPage() {
 
         <Grid gutter="xl">
           {docSections.map((section) => (
-            <Grid.Col span={{ base: 12, md: 6 }} key={section.id}>
+            <GridCol span={{ base: 12, md: 6 }} key={section.id}>
               <Card padding="xl" radius={28}>
                 <Text fw={600}>{section.title}</Text>
                 <Text size="sm" c="dimmed" mt="xs">
@@ -36,11 +36,11 @@ export default function DocsPage() {
                 </Text>
                 <List mt="md" spacing="xs">
                   {section.bullet.map((item) => (
-                    <List.Item key={item}>{item}</List.Item>
+                    <ListItem key={item}>{item}</ListItem>
                   ))}
                 </List>
               </Card>
-            </Grid.Col>
+            </GridCol>
           ))}
         </Grid>
 

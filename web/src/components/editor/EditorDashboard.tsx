@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   Grid,
+  GridCol,
   Group,
   Progress,
   SimpleGrid,
@@ -26,7 +27,7 @@ export function EditorDashboard({ record }: EditorDashboardProps) {
   return (
     <Stack gap="xl">
       <Grid gutter="xl" align="stretch">
-        <Grid.Col span={{ base: 12, md: 5 }}>
+        <GridCol span={{ base: 12, md: 5 }}>
           <Card radius={28} padding="xl">
             <Stack gap="md" align="center">
               <Badge color="aurora.4">Server authoritative preview</Badge>
@@ -47,8 +48,8 @@ export function EditorDashboard({ record }: EditorDashboardProps) {
               </Button>
             </Stack>
           </Card>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, md: 7 }}>
+        </GridCol>
+        <GridCol span={{ base: 12, md: 7 }}>
           <Card radius={28} padding="xl">
             <Stack gap="lg">
               <div>
@@ -81,11 +82,11 @@ export function EditorDashboard({ record }: EditorDashboardProps) {
               </Stack>
             </Stack>
           </Card>
-        </Grid.Col>
+        </GridCol>
       </Grid>
 
       <Grid gutter="xl">
-        <Grid.Col span={{ base: 12, md: 7 }}>
+        <GridCol span={{ base: 12, md: 7 }}>
           <Card radius={28} padding="xl">
             <Group justify="space-between" mb="md">
               <Text fw={600}>Destinations</Text>
@@ -116,8 +117,8 @@ export function EditorDashboard({ record }: EditorDashboardProps) {
               </Table.Tbody>
             </Table>
           </Card>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, md: 5 }}>
+        </GridCol>
+        <GridCol span={{ base: 12, md: 5 }}>
           <Card radius={28} padding="xl">
             <Stack gap="md">
               <Group gap="sm">
@@ -148,7 +149,7 @@ export function EditorDashboard({ record }: EditorDashboardProps) {
               </Button>
             </Stack>
           </Card>
-        </Grid.Col>
+        </GridCol>
       </Grid>
 
       <Card radius={28} padding="xl">

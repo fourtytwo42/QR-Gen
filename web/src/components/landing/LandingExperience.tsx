@@ -1,4 +1,4 @@
-import { Card, Grid, Stack, Text, Title } from '@mantine/core';
+import { Card, Grid, GridCol, Stack, Text, Title } from '@mantine/core';
 import { EditorDestination } from '@/lib/types';
 
 interface LandingExperienceProps {
@@ -18,7 +18,7 @@ export function LandingExperience({ title, description, destinations }: LandingE
       </Stack>
       <Grid gutter="lg">
         {destinations.map((destination) => (
-          <Grid.Col span={{ base: 12, sm: 6 }} key={destination.id}>
+          <GridCol span={{ base: 12, sm: 6 }} key={destination.id}>
             <Card
               padding="xl"
               radius={28}
@@ -35,7 +35,7 @@ export function LandingExperience({ title, description, destinations }: LandingE
                 </Text>
               </Stack>
             </Card>
-          </Grid.Col>
+          </GridCol>
         ))}
       </Grid>
     </Stack>

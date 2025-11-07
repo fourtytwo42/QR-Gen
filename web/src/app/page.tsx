@@ -5,8 +5,10 @@ import {
   Card,
   Divider,
   Grid,
+  GridCol,
   Group,
   List,
+  ListItem,
   SimpleGrid,
   Stack,
   Text,
@@ -124,7 +126,7 @@ export default function HomePage() {
 function Hero() {
   return (
     <Grid gutter="xl" align="center">
-      <Grid.Col span={{ base: 12, md: 7 }}>
+      <GridCol span={{ base: 12, md: 7 }}>
         <Stack gap="lg">
           <Badge
             variant="gradient"
@@ -165,8 +167,8 @@ function Hero() {
             ))}
           </Group>
         </Stack>
-      </Grid.Col>
-      <Grid.Col span={{ base: 12, md: 5 }}>
+      </GridCol>
+      <GridCol span={{ base: 12, md: 5 }}>
         <Card padding="xl" radius={28} style={{ position: 'relative' }}>
           <Stack gap="lg">
             <Group justify="space-between">
@@ -200,7 +202,7 @@ function Hero() {
             </Stack>
           </Stack>
         </Card>
-      </Grid.Col>
+      </GridCol>
     </Grid>
   );
 }
@@ -268,7 +270,7 @@ function FeatureShowcase() {
                 }
               >
                 {card.details.map((detail) => (
-                  <List.Item key={detail}>{detail}</List.Item>
+                  <ListItem key={detail}>{detail}</ListItem>
                 ))}
               </List>
             </Stack>
@@ -283,7 +285,7 @@ function FlowOverview() {
   return (
     <Card padding="xl" radius={32} withBorder style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
       <Grid gutter="xl">
-        <Grid.Col span={{ base: 12, md: 6 }}>
+        <GridCol span={{ base: 12, md: 6 }}>
           <SectionHeading
             label="Creation flow"
             title="Details → Design → Publish."
@@ -304,8 +306,8 @@ function FlowOverview() {
               </Group>
             ))}
           </Stack>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, md: 6 }}>
+        </GridCol>
+        <GridCol span={{ base: 12, md: 6 }}>
           <Stack gap="lg">
             <Card padding="lg" radius={24}>
               <Group justify="space-between" align="flex-end">
@@ -356,7 +358,7 @@ function FlowOverview() {
               </SimpleGrid>
             </Card>
           </Stack>
-        </Grid.Col>
+        </GridCol>
       </Grid>
     </Card>
   );

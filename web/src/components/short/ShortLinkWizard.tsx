@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Button, Card, Checkbox, Grid, Group, SegmentedControl, Stack, Switch, Text, TextInput } from '@mantine/core';
+import { Badge, Button, Card, Checkbox, Grid, GridCol, Group, SegmentedControl, Stack, Switch, Text, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconCheck, IconLinkPlus } from '@tabler/icons-react';
@@ -34,7 +34,7 @@ export function ShortLinkWizard() {
 
   return (
     <Grid gutter="xl">
-      <Grid.Col span={{ base: 12, md: 7 }}>
+      <GridCol span={{ base: 12, md: 7 }}>
         <Card padding="xl" radius={28}>
           <Stack gap="lg">
             <TextInput label="Internal title" {...form.getInputProps('title')} />
@@ -74,8 +74,8 @@ export function ShortLinkWizard() {
             </Group>
           </Stack>
         </Card>
-      </Grid.Col>
-      <Grid.Col span={{ base: 12, md: 5 }}>
+      </GridCol>
+      <GridCol span={{ base: 12, md: 5 }}>
         <Card padding="xl" radius={28}>
           <Stack gap="md">
             <Group justify="space-between" align="flex-end">
@@ -115,7 +115,7 @@ export function ShortLinkWizard() {
             />
           </Stack>
         </Card>
-      </Grid.Col>
+      </GridCol>
     </Grid>
   );
 }
