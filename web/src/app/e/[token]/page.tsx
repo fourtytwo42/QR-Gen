@@ -22,23 +22,30 @@ export default function EditorPage({ params }: Props) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    document.title = `Editor · ${token.slice(0, 8)}`;
+    document.title = `Editor · ${token?.slice(0, 8) || 'Loading'}`;
     
     // Load from localStorage
     const savedQRs = getSavedQRs();
-    const qrData = savedQRs.find((qr) => qr.editorToken === token);
+    console.log('[EditorPage] Looking for token:', token);
+    console.log('[EditorPage] Saved QRs:', savedQRs);
+    
+    // Try to find by editorToken first, then by id (for backwards compatibility)
+    const qrData = savedQRs.find((qr) => qr.editorToken === token || qr.id === token);
 
     if (!qrData) {
+      console.log('[EditorPage] QR not found in localStorage');
       setError('QR code not found. It may have been deleted or never existed.');
       setLoading(false);
       return;
     }
 
+    console.log('[EditorPage] Found QR data:', qrData);
+
     // Transform localStorage data to EditorRecord format
     const editorRecord = {
-      id: qrData.id,
-      title: qrData.title,
-      slug: qrData.slug,
+      id: qrData.id || token,
+      title: qrData.title || 'Untitled QR',
+      slug: qrData.slug || 'untitled',
       mode: 'single' as const, // Default for now
       passwordProtected: false,
       quietZone: 4,
@@ -47,15 +54,15 @@ export default function EditorPage({ params }: Props) {
         {
           id: 'dest-1',
           title: 'Primary',
-          url: qrData.editorUrl || `https://qrgen.link/${qrData.slug}`,
+          url: qrData.editorUrl || qrData.slug ? `https://qrgen.link/${qrData.slug}` : 'https://qrgen.link/demo',
           position: 0,
           scans: 0,
         },
       ],
       style: {
-        fgColor: qrData.style.fgColor || '#000000',
-        bgColor: qrData.style.bgColor || '#ffffff',
-        gradient: qrData.style.gradient,
+        fgColor: qrData.style?.fgColor || '#000000',
+        bgColor: qrData.style?.bgColor || '#ffffff',
+        gradient: qrData.style?.gradient || undefined,
         moduleStyle: 'dot' as const,
         eyeStyle: 'square' as const,
         quietZone: 4,
@@ -70,9 +77,11 @@ export default function EditorPage({ params }: Props) {
         devices: [],
         destinations: [],
       },
-      lastPublishedAt: qrData.createdAt,
+      lastPublishedAt: qrData.createdAt || new Date().toISOString(),
       bookmarkedHint: 'This is your private editor link. Save it now. Anyone with the link can edit.',
     };
+
+    console.log('[EditorPage] Created editor record:', editorRecord);
 
     setRecord(editorRecord);
     setLoading(false);
