@@ -452,7 +452,15 @@ export function QrWizard({ editorToken }: QrWizardProps) {
           <GridCol span={{ base: 12, md: 5 }}>
             <Card radius={28} padding="xl">
               <Stack gap="lg" align="center">
-                <Badge size="sm" variant="light">Live Preview (colors & logo only)</Badge>
+                <Group gap="xs">
+                  <Badge size="lg" variant="dot" color="green">
+                    LIVE
+                  </Badge>
+                  <Text size="sm" fw={500}>Scan this QR now!</Text>
+                </Group>
+                <Text size="xs" c="dimmed" ta="center" style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  {previewValue}
+                </Text>
                 <Box
                   key={`${style.fgColor}-${style.bgColor}-${style.gradient?.[0]}-${style.quietZone}`}
                   style={{
