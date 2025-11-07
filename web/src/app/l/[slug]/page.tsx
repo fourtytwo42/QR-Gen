@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Center, Loader, Stack, Text } from '@mantine/core';
 import { getSavedQRs } from '@/lib/localStorage';
 
+// Declare global window.qrDatabase
+declare global {
+  interface Window {
+    qrDatabase?: Record<string, any>;
+  }
+}
+
 type Props = {
   params: { slug: string };
 };
@@ -22,17 +29,26 @@ export default function QRRedirectPage({ params }: Props) {
     console.log('[QR Redirect] Slug type:', typeof slug);
     console.log('[QR Redirect] Slug length:', slug?.length);
 
-    // Find QR by slug in localStorage
-    const savedQRs = getSavedQRs();
-    console.log('[QR Redirect] Found', savedQRs.length, 'QRs in localStorage');
-    console.log('[QR Redirect] All slugs:', savedQRs.map(qr => qr.slug));
+    // Try window.qrDatabase first (in-memory, works across routes in same session)
+    let qrData = null;
+    let savedQRs: any[] = [];
     
-    const qrData = savedQRs.find((qr) => qr.slug === slug);
+    if (window.qrDatabase && window.qrDatabase[slug]) {
+      console.log('[QR Redirect] ✅ Found in window.qrDatabase!');
+      qrData = window.qrDatabase[slug];
+    } else {
+      // Fallback to localStorage
+      savedQRs = getSavedQRs();
+      console.log('[QR Redirect] Found', savedQRs.length, 'QRs in localStorage');
+      console.log('[QR Redirect] All slugs:', savedQRs.map(qr => qr.slug));
+      qrData = savedQRs.find((qr) => qr.slug === slug);
+    }
 
     if (!qrData) {
       console.error('[QR Redirect] ❌ QR NOT FOUND!');
       console.error('[QR Redirect] Searched for:', slug);
-      console.error('[QR Redirect] Available slugs:', savedQRs.map(qr => ({
+      console.error('[QR Redirect] window.qrDatabase keys:', window.qrDatabase ? Object.keys(window.qrDatabase) : 'undefined');
+      console.error('[QR Redirect] localStorage slugs:', savedQRs.map(qr => ({
         slug: qr.slug,
         title: qr.title,
         id: qr.id

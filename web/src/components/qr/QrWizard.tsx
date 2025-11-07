@@ -1,6 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+// Declare global window.qrDatabase
+declare global {
+  interface Window {
+    qrDatabase?: Record<string, any>;
+  }
+}
 import {
   Badge,
   Box,
@@ -156,8 +163,8 @@ export function QrWizard({ editorToken }: QrWizardProps) {
     return `${baseUrl}/l/${randomSlug}`;
   }, [randomSlug]);
 
-  const saveToLocalStorage = useCallback(() => {
-    console.log('[QrWizard] ===== SAVING TO LOCALSTORAGE =====');
+  const saveToLocalStorage = useCallback(async () => {
+    console.log('[QrWizard] ===== SAVING =====');
     console.log('[QrWizard] Random Slug:', randomSlug);
     console.log('[QrWizard] Editor Token:', editorToken);
     console.log('[QrWizard] Mode:', effectiveMode);
@@ -185,17 +192,18 @@ export function QrWizard({ editorToken }: QrWizardProps) {
       },
     };
     
+    // Save to localStorage (for UI display)
     saveQRToStorage(qrData);
     console.log('[QrWizard] ✅ Saved to localStorage!');
-    console.log('[QrWizard] QR URL: http://localhost:3000/l/' + randomSlug);
     
-    // Verify it was saved
-    const saved = getSavedQRs();
-    const found = saved.find(qr => qr.slug === randomSlug);
-    if (found) {
-      console.log('[QrWizard] ✅ VERIFIED: QR found in localStorage');
-    } else {
-      console.error('[QrWizard] ❌ ERROR: QR NOT found in localStorage after save!');
+    // ALSO save to a global window variable that persists across routes
+    if (typeof window !== 'undefined') {
+      if (!window.qrDatabase) {
+        window.qrDatabase = {};
+      }
+      window.qrDatabase[randomSlug] = qrData;
+      console.log('[QrWizard] ✅ Saved to window.qrDatabase!');
+      console.log('[QrWizard] QR URL: http://localhost:3000/l/' + randomSlug);
     }
   }, [editorToken, form.values.title, randomSlug, effectiveMode, destinations, style]);
 
