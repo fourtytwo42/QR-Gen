@@ -7,31 +7,24 @@ import {
   Button,
   Card,
   ColorInput,
-  Divider,
   FileButton,
   Grid,
   GridCol,
   Group,
-  NumberInput,
   rem,
-  SegmentedControl,
-  Slider,
   Stack,
-  Switch,
   Text,
   TextInput,
-  Textarea,
 } from '@mantine/core';
 import { Stepper, StepperStep } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { IconCheck, IconPlus, IconShieldLock, IconTrash, IconVocabulary } from '@tabler/icons-react';
+import { IconCheck, IconPlus, IconTrash } from '@tabler/icons-react';
 import QRCode from 'react-qr-code';
 import { Destination, QrMode, QrStyle, QrWizardValues } from '@/lib/types';
 import { saveQRToStorage } from '@/lib/localStorage';
 
-const MODULE_OPTIONS: QrStyle['moduleStyle'][] = ['square', 'rounded', 'dot'];
-const EYE_STYLES: QrStyle['eyeStyle'][] = ['square', 'rounded'];
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const INITIAL_STYLE: QrStyle = {
   fgColor: '#F6FBFE',
@@ -44,12 +37,6 @@ const INITIAL_STYLE: QrStyle = {
   withLogo: true,
   logoSizeRatio: 0.22,
 };
-
-// Slider marks defined outside component to prevent re-creation
-const SLIDER_MARKS: Array<{ value: number; label: string }> = [
-  { value: 0.18, label: 'Safe' },
-  { value: 0.28, label: 'Max print' },
-];
 
 function createDestination(position: number): Destination {
   return {
@@ -67,46 +54,30 @@ interface QrWizardProps {
 
 export function QrWizard({ editorToken }: QrWizardProps) {
   const [active, setActive] = useState(0);
-  const [destinations, setDestinations] = useState<Destination[]>([
-    {
-      id: 'initial-dest',
-      title: 'Launch timeline',
-      url: 'https://launch.qr-gen.studio/roadmap',
-      position: 0,
-      image: undefined,
-    },
-  ]);
+  const [destinations, setDestinations] = useState<Destination[]>([createDestination(0)]);
   const [style, setStyle] = useState<QrStyle>(INITIAL_STYLE);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [heroImage, setHeroImage] = useState<string | null>(null);
 const defaultOrigin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 const [origin, setOrigin] = useState<string>(defaultOrigin);
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window === 'undefined') return;
+    const raf = window.requestAnimationFrame(() => {
       setOrigin(window.location.origin);
-    }
+    });
+    return () => window.cancelAnimationFrame(raf);
   }, []);
-
-  // Handle logo file upload
-  const handleLogoUpload = (file: File | null) => {
-    setLogoFile(file);
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      setStyle((prev) => ({ ...prev, withLogo: true, ecc: 'H' }));
-    } else {
-      setLogoPreview(null);
-      setStyle((prev) => ({ ...prev, withLogo: false, ecc: 'M' }));
-    }
-  };
 
   // Handle destination image upload
   const handleDestinationImage = (destId: string, file: File | null) => {
     if (file) {
+      if (file.size > MAX_IMAGE_SIZE) {
+        notifications.show({
+          title: 'Image too large',
+          message: 'Please choose an image under 10MB.',
+          color: 'red',
+        });
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setDestinations((prev) =>
@@ -125,6 +96,15 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
       return;
     }
 
+    if (file.size > MAX_IMAGE_SIZE) {
+      notifications.show({
+        title: 'Image too large',
+        message: 'Please choose an image under 10MB.',
+        color: 'red',
+      });
+      return;
+    }
+
     const reader = new FileReader();
     reader.onloadend = () => {
       setHeroImage(reader.result as string);
@@ -134,7 +114,7 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
 
   const form = useForm<QrWizardValues>({
     initialValues: {
-      title: 'Product launch QR',
+      title: '',
       slug: '', // Auto-generated
       mode: 'single', // Auto-determined
       defaultUrl: '',
@@ -338,16 +318,6 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
               </Text>
             </Stack>
 
-            <Badge variant="light" color={effectiveMode === 'single' ? 'blue' : 'green'} size="lg">
-              {effectiveMode === 'single' ? 'Direct Redirect (1 destination)' : `Landing Page (${destinations.length} destinations)`}
-            </Badge>
-            
-            <Text size="sm" c="dimmed">
-              {effectiveMode === 'single' 
-                ? 'Scans will redirect directly to your destination (302)' 
-                : 'Scans will show a landing page with all your destinations'}
-            </Text>
-            
             <Stack gap="md">
                 {destinations.map((destination, index) => {
                   if (!destination) {
@@ -361,6 +331,7 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
                         <TextInput
                           label={`Destination ${index + 1}`}
                           placeholder="Title"
+                          maxLength={30}
                           value={destination.title || ''}
                           onChange={(event) => {
                             const newValue = event.currentTarget.value;
@@ -371,6 +342,9 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
                             );
                           }}
                         />
+                        <Text size="xs" c="dimmed">
+                          Destination names are limited to 30 characters.
+                        </Text>
                         <TextInput
                           label="URL"
                           placeholder="https://"
@@ -438,105 +412,36 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
             <Card radius={28} padding="xl">
               <Stack gap="lg">
                 <Group grow>
-                  <ColorInput label="Foreground" value={style.fgColor} onChange={(value) => setStyle((prev) => ({ ...prev, fgColor: value }))} />
-                  <ColorInput label="Background" value={style.bgColor} onChange={(value) => setStyle((prev) => ({ ...prev, bgColor: value }))} />
+                  <ColorInput
+                    label="Foreground"
+                    value={style.fgColor}
+                    onChange={(value) => setStyle((prev) => ({ ...prev, fgColor: value }))}
+                  />
+                  <ColorInput
+                    label="Background"
+                    value={style.bgColor}
+                    onChange={(value) => setStyle((prev) => ({ ...prev, bgColor: value }))}
+                  />
                 </Group>
                 <Group grow>
                   <ColorInput
                     label="Gradient start"
                     value={style.gradient?.[0]}
-                    onChange={(value) => setStyle((prev) => ({ ...prev, gradient: [value, prev.gradient?.[1] ?? value] }))}
+                    onChange={(value) =>
+                      setStyle((prev) => ({ ...prev, gradient: [value, prev.gradient?.[1] ?? value] }))
+                    }
                   />
                   <ColorInput
                     label="Gradient end"
                     value={style.gradient?.[1]}
-                    onChange={(value) => setStyle((prev) => ({ ...prev, gradient: [prev.gradient?.[0] ?? value, value] }))}
+                    onChange={(value) =>
+                      setStyle((prev) => ({ ...prev, gradient: [prev.gradient?.[0] ?? value, value] }))
+                    }
                   />
                 </Group>
-                <Stack gap={4}>
-                  <Text size="sm" fw={600}>
-                    Module style
-                  </Text>
-                  <SegmentedControl
-                  fullWidth
-                  data={MODULE_OPTIONS.filter(Boolean).map((option) => ({ label: option, value: option }))}
-                  value={style.moduleStyle || 'square'}
-                  onChange={(value) => {
-                    console.log('[SegmentedControl] onChange value:', value);
-                    setStyle((prev) => ({ ...prev, moduleStyle: value as QrStyle['moduleStyle'] }));
-                  }}
-                  aria-label="Module style"
-                />
-                </Stack>
-                <Stack gap={4}>
-                  <Text size="sm" fw={600}>
-                    Eye style
-                  </Text>
-                  <SegmentedControl
-                  fullWidth
-                  data={EYE_STYLES.filter(Boolean).map((option) => ({ label: option, value: option }))}
-                  value={style.eyeStyle || 'square'}
-                  onChange={(value) => {
-                    console.log('[SegmentedControl Eye] onChange value:', value);
-                    setStyle((prev) => ({ ...prev, eyeStyle: value as QrStyle['eyeStyle'] }));
-                  }}
-                  aria-label="Eye style"
-                />
-                </Stack>
-                <NumberInput
-                  label="Quiet zone (modules)"
-                  value={style.quietZone}
-                  onChange={(value) => setStyle((prev) => ({ ...prev, quietZone: Number(value) || 4 }))}
-                  min={4}
-                  max={20}
-                />
-                <Slider
-                  label="Logo size"
-                  value={style.logoSizeRatio || 0.22}
-                  onChange={(value) => {
-                    console.log('[Slider] onChange value:', value);
-                    setStyle((prev) => ({ ...prev, logoSizeRatio: value }));
-                  }}
-                  min={0.15}
-                  max={0.35}
-                  step={0.01}
-                  marks={SLIDER_MARKS}
-                />
-                <Switch
-                  label="Embedded logo"
-                  checked={style.withLogo}
-                  onChange={(event) =>
-                    setStyle((prev) => ({
-                      ...prev,
-                      withLogo: event.currentTarget.checked,
-                      ecc: event.currentTarget.checked ? 'H' : 'M',
-                    }))
-                  }
-                  description="We enforce ECC=H when a logo is present"
-                />
-                <Stack gap="xs">
-                  <FileButton onChange={handleLogoUpload} accept="image/png,image/jpeg,image/svg+xml">
-                    {(props) => <Button {...props} variant="light" fullWidth>
-                      {logoFile ? 'Change Logo' : 'Upload Logo'}
-                    </Button>}
-                  </FileButton>
-                  {logoFile && (
-                    <Button variant="subtle" color="red" onClick={() => handleLogoUpload(null)} fullWidth>
-                      Remove Logo
-                    </Button>
-                  )}
-                </Stack>
-                {style.withLogo && (
-                  <Badge color="aurora.4" leftSection={<IconShieldLock size={12} />}>
-                    ECC bumped to H for logo safety
-                  </Badge>
-                )}
-                {logoPreview && (
-                  <Box style={{ textAlign: 'center' }}>
-                    <Text size="xs" c="dimmed" mb={4}>Logo preview:</Text>
-                    <img src={logoPreview} alt="Logo" style={{ maxWidth: 80, maxHeight: 80 }} />
-                  </Box>
-                )}
+                <Text size="sm" c="dimmed">
+                  Adjust the foreground, background, and optional gradient to match your brand.
+                </Text>
               </Stack>
             </Card>
           </GridCol>
@@ -552,22 +457,21 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
                 <Text size="xs" c="dimmed" ta="center" style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
                   {previewValue}
                 </Text>
-                <Box
-                  key={`${style.fgColor}-${style.bgColor}-${style.gradient?.[0]}-${style.quietZone}`}
-                  style={{
-                    background: style.gradient 
-                      ? `linear-gradient(135deg, ${style.gradient[0]}, ${style.gradient[1]})` 
-                      : style.bgColor,
-                    padding: rem(style.quietZone * 4),
-                    borderRadius: 24,
-                    width: '100%',
-                    display: 'grid',
-                    placeItems: 'center',
-                    position: 'relative',
-                    transition: 'all 0.3s ease',
-                    border: `2px solid ${style.fgColor}20`,
-                  }}
-                >
+                  <Box
+                    key={`${style.fgColor}-${style.bgColor}-${style.gradient?.[0]}-${style.quietZone}`}
+                    style={{
+                      background: style.gradient
+                        ? `linear-gradient(135deg, ${style.gradient[0]}, ${style.gradient[1]})`
+                        : style.bgColor,
+                      padding: rem(style.quietZone * 4),
+                      borderRadius: 24,
+                      width: '100%',
+                      display: 'grid',
+                      placeItems: 'center',
+                      border: `2px solid ${style.fgColor}20`,
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
                   <Box
                     style={{
                       background: style.bgColor,
@@ -583,85 +487,10 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
                       level={style.ecc === 'L' ? 'L' : style.ecc === 'M' ? 'M' : style.ecc === 'Q' ? 'Q' : 'H'}
                     />
                   </Box>
-                  {logoPreview && (
-                    <Box
-                      style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        background: 'white',
-                        borderRadius: 8,
-                        padding: 4,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                      }}
-                    >
-                      <img 
-                        src={logoPreview} 
-                        alt="Logo" 
-                        style={{ 
-                          width: 220 * style.logoSizeRatio, 
-                          height: 220 * style.logoSizeRatio,
-                          display: 'block',
-                          borderRadius: 4,
-                        }} 
-                      />
-                    </Box>
-                  )}
                 </Box>
 
-                <Stack gap="xs" w="100%" align="center">
-                  <FileButton onChange={handleHeroImageUpload} accept="image/png,image/jpeg,image/jpg,image/webp">
-                    {(props) => (
-                      <Button {...props} variant="light" fullWidth>
-                        {heroImage ? 'Change landing page image' : 'Add landing page image'}
-                      </Button>
-                    )}
-                  </FileButton>
-                  {heroImage && (
-                    <>
-                      <Box
-                        style={{
-                          display: 'grid',
-                          placeItems: 'center',
-                          background: 'rgba(255,255,255,0.05)',
-                          borderRadius: 12,
-                          padding: 12,
-                          width: '100%',
-                        }}
-                      >
-                        <img
-                          src={heroImage}
-                          alt="Landing page hero"
-                          style={{ maxHeight: 200, width: 'auto', maxWidth: '100%', objectFit: 'contain', borderRadius: 10 }}
-                        />
-                      </Box>
-                      <Button variant="subtle" color="red" size="xs" onClick={() => handleHeroImageUpload(null)}>
-                        Remove landing page image
-                      </Button>
-                    </>
-                  )}
-                </Stack>
-                <Stack gap={4} w="100%">
-                  <Group justify="space-between">
-                    <Text size="xs" c="dimmed">Module:</Text>
-                    <Badge size="xs" variant="dot">{style.moduleStyle}</Badge>
-                  </Group>
-                  <Group justify="space-between">
-                    <Text size="xs" c="dimmed">Eye:</Text>
-                    <Badge size="xs" variant="dot">{style.eyeStyle}</Badge>
-                  </Group>
-                  <Group justify="space-between">
-                    <Text size="xs" c="dimmed">Quiet zone:</Text>
-                    <Badge size="xs" variant="dot">{style.quietZone} modules</Badge>
-                  </Group>
-                  <Group justify="space-between">
-                    <Text size="xs" c="dimmed">ECC:</Text>
-                    <Badge size="xs" variant="dot">{style.ecc}</Badge>
-                  </Group>
-                </Stack>
                 <Text size="sm" c="dimmed" ta="center">
-                  Client preview. Server renders final SVG/PNG with all styling via EasyQRCodeJS + Sharp.
+                  The preview updates instantly with your color changes.
                 </Text>
               </Stack>
             </Card>
@@ -679,32 +508,17 @@ const [origin, setOrigin] = useState<string>(defaultOrigin);
 
       {active === 2 && (
         <Card padding="xl" radius={28}>
-          <Stack gap="lg">
-            <Group justify="space-between">
-              <div>
-                <Text fw={600}>Final checks</Text>
-                <Text size="sm" c="dimmed">
-                  Web Risk screening, GeoLite2 enrichment, Argon2id password (optional)
-                </Text>
-              </div>
-              <Badge leftSection={<IconVocabulary size={12} />}>R2 · PDFKit · Sharp</Badge>
-            </Group>
-            <Textarea
-              label="Bookmark prompt"
-              value="This is your private editor link. Save it now. Anyone with this link can edit."
-              autosize
-              minRows={2}
-              readOnly
-            />
-            <Textarea
-              label="Editor password (optional, Argon2id)"
-              placeholder="********"
+          <Stack gap="md">
+            <Text fw={600}>Publish</Text>
+            <Text size="sm" c="dimmed">
+              Optional: set a password to protect this editor link.
+            </Text>
+            <TextInput
+              label="Editor password (optional)"
+              placeholder="Leave blank to skip"
+              type="password"
               {...form.getInputProps('password')}
             />
-            <Text size="sm" c="dimmed">
-              Publishing regenerates SVG (source of truth), PNG exports (512 & 2048 px), and PDF proof sheets with cut
-              safe margins. Assets land in Cloudflare R2 and are cached via CDN.
-            </Text>
             <Group justify="space-between">
               <Button variant="default" onClick={handleBack}>
                 Back

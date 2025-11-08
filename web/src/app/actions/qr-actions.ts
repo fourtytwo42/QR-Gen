@@ -1,11 +1,36 @@
 'use server';
 
 import { query, queryOne, transaction } from '@/lib/db';
-import { sha256Hash, hashPassword, normalizeURL } from '@/lib/utils';
+import {
+  sha256Hash,
+  hashPassword,
+  normalizeURL,
+  hashIP,
+  parseDeviceCategory,
+  extractDomain,
+} from '@/lib/utils';
 import { generateQRAssets } from '@/lib/qr-generator';
 import { generateQRPDF } from '@/lib/pdf-generator';
-import { QrStyle, QrMode, Destination } from '@/lib/types';
+import { QrStyle, QrMode, EditorDestination } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
+
+function parseGradient(value: unknown): [string, string] | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    if (Array.isArray(parsed) && parsed.length === 2) {
+      return [String(parsed[0]), String(parsed[1])];
+    }
+  } catch {
+    if (typeof value === 'string' && value.includes(',')) {
+      const parts = value.split(',').map((part) => part.trim());
+      if (parts.length === 2) {
+        return [parts[0], parts[1]];
+      }
+    }
+  }
+  return undefined;
+}
 
 export interface CreateQRInput {
   title: string;
@@ -25,6 +50,110 @@ export interface CreateQRResult {
   slug?: string;
   editorToken?: string;
   error?: string;
+}
+
+type DestinationRow = {
+  id: string;
+  title: string;
+  url: string;
+  position: number;
+  image_object_key: string | null;
+};
+
+type QRDatabaseRow = {
+  id: string;
+  slug: string;
+  title: string;
+  mode: QrMode;
+  default_destination_url: string | null;
+  editor_password_hash: string | null;
+  ecc_level: QrStyle['ecc'];
+  quiet_zone_modules: number;
+  module_style: QrStyle['moduleStyle'];
+  eye_style: QrStyle['eyeStyle'];
+  fg_color: string;
+  bg_color: string;
+  gradient_json: string | null;
+  hero_image: string | null;
+  logo_object_key: string | null;
+  logo_size_ratio: number;
+  last_published_at: string | null;
+  status: string;
+};
+
+type ScanStatsRow = {
+  total_scans: string | null;
+  unique_scans: string | null;
+};
+
+type SliceRow = {
+  label: string | null;
+  value: string;
+};
+
+type DestinationCountRow = {
+  destination_id: string | null;
+  value: string;
+};
+
+interface RecordScanOptions {
+  qrId: string;
+  slug: string;
+  ip?: string | null;
+  userAgent?: string | null;
+  country?: string | null;
+  referrer?: string | null;
+  destinationId?: string | null;
+  destinationUrl?: string | null;
+  eventKind: 'scan' | 'destination';
+}
+
+export async function recordQRScan({
+  qrId,
+  slug,
+  ip,
+  userAgent,
+  country,
+  referrer,
+  destinationId,
+  destinationUrl,
+  eventKind,
+}: RecordScanOptions) {
+  try {
+    const ipHash = ip ? hashIP(ip) : null;
+    const uaHash = userAgent ? sha256Hash(userAgent) : null;
+    const device = userAgent ? parseDeviceCategory(userAgent) : null;
+    const refDomain = referrer ? extractDomain(referrer) : null;
+
+    await query(
+      `INSERT INTO qr_scan_event (
+        qr_id,
+        public_slug_snapshot,
+        user_agent_hash,
+        ip_hash,
+        country_iso,
+        referrer_domain,
+        device_category,
+        destination_id,
+        destination_url,
+        event_kind
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [
+        qrId,
+        slug,
+        uaHash,
+        ipHash,
+        country || null,
+        refDomain,
+        device,
+        destinationId || null,
+        destinationUrl || null,
+        eventKind,
+      ]
+    );
+  } catch (error) {
+    console.error('[recordQRScan] Failed to log scan event:', error);
+  }
 }
 
 /**
@@ -181,7 +310,7 @@ export async function getQRBySlug(slug: string) {
   try {
     console.log('[getQRBySlug] Looking for slug:', slug);
     
-    const qr = await queryOne<any>(
+    const qr = await queryOne<QRDatabaseRow>(
       `SELECT * FROM qr WHERE slug = $1 AND status = 'active'`,
       [slug]
     );
@@ -194,7 +323,7 @@ export async function getQRBySlug(slug: string) {
     console.log('[getQRBySlug] Found QR:', qr.id);
 
     // Get destinations
-    const destinations = await query<any>(
+    const destinations = await query<DestinationRow>(
       `SELECT * FROM qr_destination WHERE qr_id = $1 ORDER BY position`,
       [qr.id]
     );
@@ -204,12 +333,12 @@ export async function getQRBySlug(slug: string) {
     return {
       ...qr,
       heroImage: qr.hero_image,
-      destinations: destinations.map((dest: any) => ({
+      destinations: destinations.map((dest) => ({
         id: dest.id,
         title: dest.title,
         url: dest.url,
         position: dest.position,
-        image: dest.image_object_key,
+        image: dest.image_object_key ?? undefined,
       })),
     };
   } catch (error) {
@@ -225,7 +354,7 @@ export async function getQRByEditorToken(editorToken: string) {
   try {
     const tokenHash = sha256Hash(editorToken);
     
-    const qr = await queryOne<any>(
+    const qr = await queryOne<QRDatabaseRow>(
       `SELECT * FROM qr WHERE editor_token_hash = $1 AND status = 'active'`,
       [tokenHash]
     );
@@ -235,22 +364,35 @@ export async function getQRByEditorToken(editorToken: string) {
     }
 
     // Get destinations
-    const destinations = await query<any>(
+    const destinations = await query<DestinationRow>(
       `SELECT * FROM qr_destination WHERE qr_id = $1 ORDER BY position`,
       [qr.id]
     );
 
-    return {
-      ...qr,
-      heroImage: qr.hero_image,
-      destinations: destinations.map((dest: any) => ({
+    const analytics = await getQRAnalytics(qr.id);
+    const destinationCounts = new Map<string, number>(
+      (analytics.destinationCounts || []).map((row) => [row.destinationId, row.count])
+    );
+
+    const destinationRecords: EditorDestination[] = destinations.map((dest) => {
+      const base: EditorDestination = {
         id: dest.id,
         title: dest.title,
         url: dest.url,
         position: dest.position,
-        image: dest.image_object_key,
-      })),
-      analytics: await getQRAnalytics(qr.id),
+        scans: destinationCounts.get(dest.id) ?? 0,
+      };
+      if (dest.image_object_key) {
+        base.image = dest.image_object_key;
+      }
+      return base;
+    });
+
+    return {
+      ...qr,
+      heroImage: qr.hero_image,
+      destinations: destinationRecords,
+      analytics,
     };
   } catch (error) {
     console.error('Error fetching QR:', error);
@@ -300,7 +442,7 @@ export async function updateQRStyle(qrId: string, style: QrStyle) {
  */
 export async function downloadQRAssets(slug: string, format: 'svg' | 'png' | 'pdf') {
   try {
-    const qr = await queryOne<any>('SELECT * FROM qr WHERE slug = $1', [slug]);
+    const qr = await queryOne<QRDatabaseRow>('SELECT * FROM qr WHERE slug = $1', [slug]);
     
     if (!qr) {
       throw new Error('QR not found');
@@ -309,7 +451,7 @@ export async function downloadQRAssets(slug: string, format: 'svg' | 'png' | 'pd
     const style: QrStyle = {
       fgColor: qr.fg_color,
       bgColor: qr.bg_color,
-      gradient: qr.gradient_json ? JSON.parse(qr.gradient_json) : undefined,
+      gradient: parseGradient(qr.gradient_json),
       moduleStyle: qr.module_style,
       eyeStyle: qr.eye_style,
       quietZone: qr.quiet_zone_modules,
@@ -327,7 +469,7 @@ export async function downloadQRAssets(slug: string, format: 'svg' | 'png' | 'pd
     } else if (format === 'png') {
       return { data: assets.png2048, mimeType: 'image/png' };
     } else if (format === 'pdf') {
-      const destinations = await query<any>(
+      const destinations = await query<DestinationRow>(
         'SELECT title, url FROM qr_destination WHERE qr_id = $1 ORDER BY position',
         [qr.id]
       );
@@ -361,18 +503,17 @@ export async function downloadQRAssets(slug: string, format: 'svg' | 'png' | 'pd
  */
 export async function getQRAnalytics(qrId: string) {
   try {
-    // Total and unique scans
-    const scanStats = await queryOne<any>(
+    const scanStats = await queryOne<ScanStatsRow>(
       `SELECT 
         COUNT(*) as total_scans,
         COUNT(DISTINCT ip_hash) as unique_scans
       FROM qr_scan_event 
-      WHERE qr_id = $1`,
+      WHERE qr_id = $1 AND event_kind = 'scan'`,
       [qrId]
     );
 
     // Top countries
-    const topCountries = await query<any>(
+    const topCountries = await query<SliceRow>(
       `SELECT 
         country_iso as label,
         COUNT(*) as value
@@ -384,23 +525,42 @@ export async function getQRAnalytics(qrId: string) {
       [qrId]
     );
 
-    // Device breakdown
-    const devices = await query<any>(
+    const devices = await query<SliceRow>(
       `SELECT 
         device_category as label,
         COUNT(*) as value
       FROM qr_scan_event
-      WHERE qr_id = $1 AND device_category IS NOT NULL
+      WHERE qr_id = $1 AND device_category IS NOT NULL AND event_kind = 'scan'
       GROUP BY device_category
       ORDER BY value DESC`,
+      [qrId]
+    );
+
+    const destinationStats = await query<DestinationCountRow>(
+      `SELECT destination_id, COUNT(*) as value
+       FROM qr_scan_event
+       WHERE qr_id = $1 AND event_kind = 'destination' AND destination_id IS NOT NULL
+       GROUP BY destination_id`,
       [qrId]
     );
 
     return {
       totalScans: parseInt(scanStats?.total_scans || '0'),
       uniqueScans: parseInt(scanStats?.unique_scans || '0'),
-      topCountries: topCountries.map(c => ({ label: c.label, value: parseInt(c.value) })),
-      devices: devices.map(d => ({ label: d.label, value: parseInt(d.value) })),
+      topCountries: topCountries.map((c) => ({
+        label: c.label ?? 'Unknown',
+        value: parseInt(c.value, 10),
+      })),
+      devices: devices.map((d) => ({
+        label: d.label ?? 'unknown',
+        value: parseInt(d.value, 10),
+      })),
+      destinationCounts: destinationStats
+        .filter((row) => row.destination_id)
+        .map((row) => ({
+          destinationId: row.destination_id as string,
+          count: parseInt(row.value, 10),
+      })),
     };
   } catch (error) {
     console.error('Error fetching analytics:', error);
@@ -409,6 +569,7 @@ export async function getQRAnalytics(qrId: string) {
       uniqueScans: 0,
       topCountries: [],
       devices: [],
+      destinationCounts: [],
     };
   }
 }

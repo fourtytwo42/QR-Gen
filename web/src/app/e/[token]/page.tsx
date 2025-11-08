@@ -10,6 +10,29 @@ interface Props {
   params: Promise<{ token: string }>;
 }
 
+function parseGradientValue(value: unknown): [string, string] | undefined {
+  if (!value) return undefined;
+  if (Array.isArray(value) && value.length === 2) {
+    return [String(value[0]), String(value[1])];
+  }
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed) && parsed.length === 2) {
+        return [String(parsed[0]), String(parsed[1])];
+      }
+    } catch {
+      if (value.includes(',')) {
+        const parts = value.split(',').map((part) => part.trim());
+        if (parts.length === 2) {
+          return [parts[0], parts[1]];
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
 export default async function EditorPage({ params }: Props) {
   const { token } = await params;
 
@@ -35,19 +58,19 @@ export default async function EditorPage({ params }: Props) {
     passwordProtected: !!qrData.editor_password_hash,
     quietZone: qrData.quiet_zone_modules,
     ecc: qrData.ecc_level,
-    destinations: qrData.destinations.map((d: any) => ({
+    destinations: qrData.destinations.map((d) => ({
       id: d.id,
       title: d.title,
       url: d.url,
       position: d.position,
-      image: d.image,
-      scans: 0,
+      image: d.image ?? undefined,
+      scans: d.scans ?? 0,
     })),
     heroImage: qrData.heroImage || undefined,
     style: {
       fgColor: qrData.fg_color,
       bgColor: qrData.bg_color,
-      gradient: qrData.gradient_json ? JSON.parse(qrData.gradient_json) : undefined,
+      gradient: parseGradientValue(qrData.gradient_json),
       moduleStyle: qrData.module_style,
       eyeStyle: qrData.eye_style,
       quietZone: qrData.quiet_zone_modules,
@@ -60,10 +83,9 @@ export default async function EditorPage({ params }: Props) {
       uniqueScans: 0,
       topCountries: [],
       devices: [],
-      destinations: [],
     },
     lastPublishedAt: qrData.last_published_at || new Date().toISOString(),
-    bookmarkedHint: 'This is your private editor link. Save it now. Anyone with the link can edit.',
+    bookmarkedHint: undefined,
     origin,
   };
 

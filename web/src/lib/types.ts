@@ -31,10 +31,29 @@ export interface QrWizardValues {
 export interface ShortLinkConfig {
   title: string;
   slug: string;
-  targetUrl: string;
-  status: 'draft' | 'active';
-  redirectCode: 301 | 302;
-  customDomain?: string;
+  destinations: Destination[];
+  heroImage?: string;
+}
+
+export interface SavedShortLink {
+  id: string;
+  title: string;
+  slug: string;
+  editorToken: string;
+  editorUrl: string;
+  createdAt: string;
+  origin?: string;
+  heroImage?: string;
+  destinations: Destination[];
+}
+
+export interface SaveShortLinkResponse {
+  success: boolean;
+  id?: string;
+  slug?: string;
+  createdAt?: string;
+  editorToken?: string;
+  error?: string;
 }
 
 export interface AnalyticsSlice {
@@ -46,12 +65,17 @@ export interface EditorDestination extends Destination {
   scans: number;
 }
 
+export interface DestinationScanCount {
+  destinationId: string;
+  count: number;
+}
+
 export interface EditorAnalytics {
   totalScans: number;
   uniqueScans: number;
   topCountries: AnalyticsSlice[];
   devices: AnalyticsSlice[];
-  destinations: EditorDestination[];
+  destinationCounts?: DestinationScanCount[];
 }
 
 export interface EditorRecord {

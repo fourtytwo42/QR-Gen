@@ -1,9 +1,8 @@
 'use client';
 
-import { Badge, Divider, Stack, Text, Title } from '@mantine/core';
+import { Divider, Stack, Text, Title } from '@mantine/core';
 import { SiteShell } from '@/components/layout/SiteShell';
 import { QrWizard } from '@/components/qr/QrWizard';
-import { SavedQRsList } from '@/components/qr/SavedQRsList';
 import { useEffect, useState } from 'react';
 
 interface Props {
@@ -27,23 +26,13 @@ export default function CreateQrPage({ params }: Props) {
   return (
     <SiteShell>
       <Stack gap="xl">
-        <SavedQRsList />
-        
         <Divider label="Create New QR" labelPosition="center" />
-        
         <div>
-          <Badge variant="light" color="aurora.5" size="lg">
-            Details → Design → Publish
-          </Badge>
           <Title order={1} mt="sm">
-            Create a branded QR with server-authoritative assets.
+            Build your QR code.
           </Title>
           <Text c="dimmed" maw={680}>
-            Every save runs Web Risk screening, enforces ISO quiet zones, and bumps ECC to H when logos are present.
-            Publishing regenerates SVG, PNG, and PDF via EasyQRCodeJS-NodeJS, Sharp, and PDFKit.
-          </Text>
-          <Text size="xs" c="dimmed" mt="xs">
-            Your unique editor token: <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4 }}>{token.slice(0, 20)}...</code>
+            Add one or more destinations, tweak the design, then publish when you’re happy. You can come back any time using the editor link we generate for you.
           </Text>
         </div>
         <QrWizard editorToken={token} />

@@ -62,7 +62,6 @@ export const mockEditorRecord: EditorRecord = {
       { label: 'Desktop', value: 22 },
       { label: 'Tablet', value: 10 },
     ],
-    destinations: DESTINATIONS,
   },
   lastPublishedAt: '2025-11-05T14:32:00Z',
   bookmarkedHint: 'This is your private editor link. Save it now. Anyone with the link can edit.',

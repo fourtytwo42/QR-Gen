@@ -1,11 +1,16 @@
-'use server';
-
 import { NextResponse } from 'next/server';
-import { createQR } from '@/app/actions/qr-actions';
+import { createShortLink } from '@/app/actions/short-actions';
 
 export async function POST(request: Request) {
   try {
     const payload = await request.json();
+
+    if (!payload?.editorToken || !payload?.slug || !payload?.title) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields.' },
+        { status: 400 }
+      );
+    }
 
     const forwardedHost =
       request.headers.get('x-forwarded-host') ||
@@ -21,7 +26,7 @@ export async function POST(request: Request) {
           scheme = parsed.scheme;
         }
       } catch {
-        // ignore
+        // ignore parse errors
       }
     }
     const computedOrigin = host ? `${scheme || 'https'}://${host}` : undefined;
@@ -31,19 +36,20 @@ export async function POST(request: Request) {
       finalOrigin = computedOrigin || finalOrigin;
     }
 
-    const result = await createQR({
-      ...payload,
+    const result = await createShortLink({
+      title: payload.title,
+      slug: payload.slug,
+      editorToken: payload.editorToken,
+      destinations: payload.destinations ?? [],
+      heroImage: payload.heroImage,
       origin: finalOrigin,
     });
 
-    if (!result.success) {
-      return NextResponse.json({ success: false, error: result.error || 'Failed to create QR' }, { status: 400 });
-    }
-
-    return NextResponse.json({ success: true, data: result });
+    const status = result.success ? 200 : 400;
+    return NextResponse.json(result, { status });
   } catch (error) {
-    console.error('[api/qr] Error saving QR:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    console.error('[api/short] Error:', error);
+    return NextResponse.json({ success: false, error: 'Unexpected server error.' }, { status: 500 });
   }
 }
 

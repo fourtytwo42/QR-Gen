@@ -61,11 +61,14 @@ CREATE TABLE IF NOT EXISTS short_link (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     slug VARCHAR(255) UNIQUE NOT NULL,
     target_url TEXT NOT NULL,
-    owner_device_key_hash VARCHAR(255) NOT NULL,
+    owner_device_key_hash VARCHAR(255),
+    editor_token_hash VARCHAR(255) UNIQUE,
     redirect_code INTEGER NOT NULL DEFAULT 302 CHECK (redirect_code IN (301, 302)),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived'))
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+    hero_image TEXT,
+    origin TEXT
 );
 
 -- Short link click events
@@ -110,8 +113,24 @@ CREATE INDEX IF NOT EXISTS idx_qr_destination_qr_id ON qr_destination(qr_id);
 CREATE INDEX IF NOT EXISTS idx_qr_scan_event_qr_id ON qr_scan_event(qr_id);
 CREATE INDEX IF NOT EXISTS idx_qr_scan_event_ts ON qr_scan_event(ts);
 CREATE INDEX IF NOT EXISTS idx_short_link_slug ON short_link(slug);
+CREATE INDEX IF NOT EXISTS idx_short_link_status ON short_link(status);
 CREATE INDEX IF NOT EXISTS idx_short_click_event_link_id ON short_click_event(short_link_id);
 CREATE INDEX IF NOT EXISTS idx_blocked_url_hash ON blocked_url(url_hash);
+CREATE INDEX IF NOT EXISTS idx_file_object_key ON file_object(object_key);
+
+-- Short link destinations
+CREATE TABLE IF NOT EXISTS short_link_destination (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    short_link_id UUID NOT NULL REFERENCES short_link(id) ON DELETE CASCADE,
+    title VARCHAR(500) NOT NULL,
+    url TEXT NOT NULL,
+    image_object_key TEXT,
+    position INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_short_link_destination_link_id ON short_link_destination(short_link_id);
 
 -- Update trigger for updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -129,5 +148,8 @@ CREATE TRIGGER update_qr_destination_updated_at BEFORE UPDATE ON qr_destination
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_short_link_updated_at BEFORE UPDATE ON short_link
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_short_link_destination_updated_at BEFORE UPDATE ON short_link_destination
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

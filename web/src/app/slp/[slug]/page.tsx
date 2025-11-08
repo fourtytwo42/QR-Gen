@@ -1,51 +1,34 @@
-
-import { Card, Container, Stack, Text, Title, Box, SimpleGrid } from '@mantine/core';
-import { getQRBySlug } from '@/app/actions/qr-actions';
+import { Box, Card, Container, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import { notFound } from 'next/navigation';
+import { getShortLinkBySlug } from '@/app/actions/short-actions';
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
-/**
- * Multi-link landing page
- */
-type LandingDestination = {
-  id: string;
-  title: string;
-  url: string;
-  position: number;
-  image?: string | null;
-};
-
-export default async function LandingPage({ params }: Props) {
+export default async function ShortLinkLandingPage({ params }: Props) {
   const { slug } = await params;
 
-  console.log('[Landing Page] Fetching QR from database for slug:', slug);
+  const shortLink = await getShortLinkBySlug(slug);
 
-  const qrData = await getQRBySlug(slug);
-
-  if (!qrData) {
-    console.log('[Landing Page] QR not found in database');
+  if (!shortLink) {
     notFound();
   }
 
-  const destinations: LandingDestination[] = (qrData.destinations || [])
-    .map((destination: LandingDestination) => destination)
-    .sort((a: LandingDestination, b: LandingDestination) => a.position - b.position);
+  const destinations = shortLink.destinations.sort((a, b) => a.position - b.position);
   const total = destinations.length;
   const colsConfig = {
-    base: Math.max(Math.min(total, 2), 1),
-    sm: Math.max(Math.min(total, 3), 1),
-    md: Math.max(Math.min(total, 4), 1),
-    lg: Math.max(Math.min(total, 5), 1),
-    xl: Math.max(Math.min(total, 6), 1),
+    base: Math.max(Math.min(total || 1, 2), 1),
+    sm: Math.max(Math.min(total || 1, 3), 1),
+    md: Math.max(Math.min(total || 1, 4), 1),
+    lg: Math.max(Math.min(total || 1, 5), 1),
+    xl: Math.max(Math.min(total || 1, 6), 1),
   };
 
   return (
     <Container size="xs" py="xl">
       <Stack gap="xl" align="center">
-        {qrData.heroImage && (
+        {shortLink.heroImage && (
           <Box
             style={{
               width: '100%',
@@ -54,30 +37,29 @@ export default async function LandingPage({ params }: Props) {
             }}
           >
             <img
-              src={qrData.heroImage}
-              alt={`${qrData.title} hero`}
+              src={shortLink.heroImage}
+              alt={`${shortLink.title} hero`}
               style={{ maxHeight: 320, width: 'auto', maxWidth: '100%', objectFit: 'contain' }}
             />
           </Box>
         )}
+
         <div style={{ textAlign: 'center', width: '100%' }}>
-          <Title order={1} size="h1">{qrData.title}</Title>
+          <Title order={1} size="h1">
+            {shortLink.title}
+          </Title>
         </div>
 
         {total > 0 ? (
-          <SimpleGrid
-            w="100%"
-            spacing="lg"
-            cols={colsConfig}
-          >
-            {destinations.map((dest) => (
+          <SimpleGrid w="100%" spacing="lg" cols={colsConfig}>
+            {destinations.map((destination) => (
               <Card
-                key={dest.id}
+                key={destination.id}
                 padding="lg"
                 radius={28}
                 withBorder={false}
                 component="a"
-                href={`/l/${slug}?destination=${dest.id}`}
+                href={destination.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -99,10 +81,10 @@ export default async function LandingPage({ params }: Props) {
                       placeItems: 'center',
                     }}
                   >
-                    {dest.image ? (
+                    {destination.image ? (
                       <img
-                        src={dest.image}
-                        alt={dest.title || 'Destination'}
+                        src={destination.image}
+                        alt={destination.title || 'Destination'}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     ) : (
@@ -117,13 +99,13 @@ export default async function LandingPage({ params }: Props) {
                           lineHeight: 1.1,
                         }}
                       >
-                        {dest.title || 'Untitled'}
+                        {destination.title || 'Untitled'}
                       </Text>
                     )}
                   </Box>
-                  {dest.image && (
+                  {destination.image && (
                     <Text fw={600} size="sm" ta="center">
-                      {dest.title || 'Untitled'}
+                      {destination.title || 'Untitled'}
                     </Text>
                   )}
                 </Stack>

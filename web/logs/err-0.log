@@ -40,3 +40,275 @@
     at ignore-listed frames {
   digest: '2368550894'
 }
+2025-11-07T14:02:20: Error fetching QR: TypeError: The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received undefined
+    at d (.next/server/chunks/ssr/[root-of-the-server]__536fef84._.js:1:1246)
+    at n (.next/server/chunks/ssr/[root-of-the-server]__536fef84._.js:173:1069)
+    at async m (.next/server/chunks/ssr/_f79d5c19._.js:1:6946) {
+  code: 'ERR_INVALID_ARG_TYPE'
+}
+2025-11-07T14:02:26: Error fetching QR: TypeError: The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received undefined
+    at d (.next/server/chunks/ssr/[root-of-the-server]__536fef84._.js:1:1246)
+    at n (.next/server/chunks/ssr/[root-of-the-server]__536fef84._.js:173:1069) {
+  code: 'ERR_INVALID_ARG_TYPE'
+}
+2025-11-07T17:20:41: [createQR] ❌ Error: error: duplicate key value violates unique constraint "qr_editor_token_hash_key"
+    at async (.next/server/chunks/_a7eb0e05._.js:153:868)
+    at async l (.next/server/chunks/_a7eb0e05._.js:1:850)
+    at async u (.next/server/chunks/_a7eb0e05._.js:153:827)
+    at async l (.next/server/chunks/[root-of-the-server]__8d9f13a5._.js:1:4964)
+    at async d (.next/server/chunks/[root-of-the-server]__8d9f13a5._.js:1:8771) {
+  length: 283,
+  severity: 'ERROR',
+  code: '23505',
+  detail: 'Key (editor_token_hash)=(fb192d7d0f323922861d4356d9a16292024f7ec1c1bb333fadaa22dff83392f4) already exists.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'qr',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'qr_editor_token_hash_key',
+  file: 'nbtinsert.c',
+  line: '666',
+  routine: '_bt_check_unique'
+}
+2025-11-07T23:23:13: Error: Could not find a production build in the '.next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at ignore-listed frames
+2025-11-07T23:23:14: Error: Could not find a production build in the '.next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at ignore-listed frames
+2025-11-07T23:23:14: Error: Could not find a production build in the '.next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at ignore-listed frames
+2025-11-07T23:23:15: Error: Could not find a production build in the '.next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at ignore-listed frames
+2025-11-07T23:23:16: Error: Could not find a production build in the '.next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at ignore-listed frames
+2025-11-07T23:23:16: Error: Could not find a production build in the '.next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at ignore-listed frames
+2025-11-07T23:23:17: Error: Could not find a production build in the '.next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at ignore-listed frames
+2025-11-07T23:23:18: Error: Could not find a production build in the '.next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at ignore-listed frames
+2025-11-07T23:23:18: Error: Could not find a production build in the '.next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at ignore-listed frames
+2025-11-07T23:23:19: Error: Could not find a production build in the '.next' directory. Try building your app with 'next build' before starting the production server. https://nextjs.org/docs/messages/production-start-no-build-id
+    at ignore-listed frames
+2025-11-07T23:43:40:  ⨯ Error: Event handlers cannot be passed to Client Component props.
+  {padding: "lg", radius: 28, withBorder: ..., component: ..., href: ..., target: ..., rel: ..., style: ..., onMouseEnter: function onMouseEnter, onMouseLeave: ..., children: ...}
+                                                                                                                           ^^^^^^^^^^^^^^^^^^^^^
+If you need interactivity, consider converting part of this to a Client Component.
+    at stringify (<anonymous>) {
+  digest: '98127992'
+}
+2025-11-07T23:43:40:  ⨯ Error: Event handlers cannot be passed to Client Component props.
+  {padding: "lg", radius: 28, withBorder: ..., component: ..., href: ..., target: ..., rel: ..., style: ..., onMouseEnter: ..., onMouseLeave: function onMouseLeave, children: ...}
+                                                                                                                                              ^^^^^^^^^^^^^^^^^^^^^
+If you need interactivity, consider converting part of this to a Client Component.
+    at stringify (<anonymous>) {
+  digest: '2123095992'
+}
+2025-11-07T23:43:40:  ⨯ Error: Event handlers cannot be passed to Client Component props.
+  {padding: "lg", radius: 28, withBorder: ..., component: ..., href: ..., target: ..., rel: ..., style: ..., onMouseEnter: function onMouseEnter, onMouseLeave: ..., children: ...}
+                                                                                                                           ^^^^^^^^^^^^^^^^^^^^^
+If you need interactivity, consider converting part of this to a Client Component.
+    at stringify (<anonymous>) {
+  digest: '98127992'
+}
+2025-11-07T23:43:40:  ⨯ Error: Event handlers cannot be passed to Client Component props.
+  {padding: "lg", radius: 28, withBorder: ..., component: ..., href: ..., target: ..., rel: ..., style: ..., onMouseEnter: ..., onMouseLeave: function onMouseLeave, children: ...}
+                                                                                                                                              ^^^^^^^^^^^^^^^^^^^^^
+If you need interactivity, consider converting part of this to a Client Component.
+    at stringify (<anonymous>) {
+  digest: '2123095992'
+}
+2025-11-07T23:43:59:  ⨯ Error: Event handlers cannot be passed to Client Component props.
+  {padding: "lg", radius: 28, withBorder: ..., component: ..., href: ..., target: ..., rel: ..., style: ..., onMouseEnter: function onMouseEnter, onMouseLeave: ..., children: ...}
+                                                                                                                           ^^^^^^^^^^^^^^^^^^^^^
+If you need interactivity, consider converting part of this to a Client Component.
+    at stringify (<anonymous>) {
+  digest: '98127992'
+}
+2025-11-07T23:43:59:  ⨯ Error: Event handlers cannot be passed to Client Component props.
+  {padding: "lg", radius: 28, withBorder: ..., component: ..., href: ..., target: ..., rel: ..., style: ..., onMouseEnter: ..., onMouseLeave: function onMouseLeave, children: ...}
+                                                                                                                                              ^^^^^^^^^^^^^^^^^^^^^
+If you need interactivity, consider converting part of this to a Client Component.
+    at stringify (<anonymous>) {
+  digest: '2123095992'
+}
+2025-11-07T23:43:59:  ⨯ Error: Event handlers cannot be passed to Client Component props.
+  {padding: "lg", radius: 28, withBorder: ..., component: ..., href: ..., target: ..., rel: ..., style: ..., onMouseEnter: function onMouseEnter, onMouseLeave: ..., children: ...}
+                                                                                                                           ^^^^^^^^^^^^^^^^^^^^^
+If you need interactivity, consider converting part of this to a Client Component.
+    at stringify (<anonymous>) {
+  digest: '98127992'
+}
+2025-11-07T23:43:59:  ⨯ Error: Event handlers cannot be passed to Client Component props.
+  {padding: "lg", radius: 28, withBorder: ..., component: ..., href: ..., target: ..., rel: ..., style: ..., onMouseEnter: ..., onMouseLeave: function onMouseLeave, children: ...}
+                                                                                                                                              ^^^^^^^^^^^^^^^^^^^^^
+If you need interactivity, consider converting part of this to a Client Component.
+    at stringify (<anonymous>) {
+  digest: '2123095992'
+}
+2025-11-08T00:57:24:  ⨯ SyntaxError: Unexpected token '#', "#5DE0E6,#004AAD" is not valid JSON
+    at JSON.parse (<anonymous>)
+    at m (.next/server/chunks/ssr/_4bcb4541._.js:1:21477) {
+  digest: '4064359569'
+}
+2025-11-08T02:30:14:  ⨯ Error: Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with "use server". Or maybe you meant to call this function rather than return it.
+  {component: function i, href: "/qr/new", variant: ..., rightSection: ..., w: ..., children: ...}
+              ^^^^^^^^^^
+    at stringify (<anonymous>) {
+  digest: '734043019'
+}
+2025-11-08T02:30:14:  ⨯ Error: Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with "use server". Or maybe you meant to call this function rather than return it.
+  {component: function i, href: ..., variant: ..., rightSection: ..., w: ..., children: ...}
+              ^^^^^^^^^^
+    at stringify (<anonymous>) {
+  digest: '4093595083'
+}
+2025-11-08T02:30:14:  ⨯ Error: Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with "use server". Or maybe you meant to call this function rather than return it.
+  {component: function i, href: "/qr/new", variant: ..., rightSection: ..., w: ..., children: ...}
+              ^^^^^^^^^^
+    at stringify (<anonymous>) {
+  digest: '734043019'
+}
+2025-11-08T02:30:14:  ⨯ Error: Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with "use server". Or maybe you meant to call this function rather than return it.
+  {component: function i, href: ..., variant: ..., rightSection: ..., w: ..., children: ...}
+              ^^^^^^^^^^
+    at stringify (<anonymous>) {
+  digest: '4093595083'
+}
+2025-11-08T02:30:17:  ⨯ Error: Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with "use server". Or maybe you meant to call this function rather than return it.
+  {component: function i, href: "/qr/new", variant: ..., rightSection: ..., w: ..., children: ...}
+              ^^^^^^^^^^
+    at stringify (<anonymous>) {
+  digest: '734043019'
+}
+2025-11-08T02:30:17:  ⨯ Error: Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with "use server". Or maybe you meant to call this function rather than return it.
+  {component: function i, href: ..., variant: ..., rightSection: ..., w: ..., children: ...}
+              ^^^^^^^^^^
+    at stringify (<anonymous>) {
+  digest: '4093595083'
+}
+2025-11-08T02:38:03: [createShortLink] Error: error: column "editor_token_hash" does not exist
+    at async (.next/server/chunks/[root-of-the-server]__577747d5._.js:1:1769)
+    at async u (.next/server/chunks/_4326a0c0._.js:1:850)
+    at async d (.next/server/chunks/[root-of-the-server]__577747d5._.js:1:1725)
+    at async o (.next/server/chunks/[root-of-the-server]__577747d5._.js:33:1019)
+    at async u (.next/server/chunks/[root-of-the-server]__577747d5._.js:33:4753) {
+  length: 117,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '33',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+2025-11-08T02:38:38: [createShortLink] Error: error: column "editor_token_hash" does not exist
+    at async (.next/server/chunks/[root-of-the-server]__577747d5._.js:1:1769)
+    at async u (.next/server/chunks/_4326a0c0._.js:1:850)
+    at async d (.next/server/chunks/[root-of-the-server]__577747d5._.js:1:1725)
+    at async o (.next/server/chunks/[root-of-the-server]__577747d5._.js:33:1019)
+    at async u (.next/server/chunks/[root-of-the-server]__577747d5._.js:33:4753) {
+  length: 117,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '33',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+2025-11-08T02:43:21: [createShortLink] Error: error: column "editor_token_hash" does not exist
+    at async (.next/server/chunks/[root-of-the-server]__577747d5._.js:1:1769)
+    at async u (.next/server/chunks/_4326a0c0._.js:1:850)
+    at async d (.next/server/chunks/[root-of-the-server]__577747d5._.js:1:1725)
+    at async o (.next/server/chunks/[root-of-the-server]__577747d5._.js:33:1019)
+    at async u (.next/server/chunks/[root-of-the-server]__577747d5._.js:33:4753) {
+  length: 117,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '33',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+2025-11-08T02:57:28: [createShortLink] Error: error: column "title" of relation "short_link" does not exist
+    at async (.next/server/chunks/[root-of-the-server]__577747d5._.js:10:336)
+    at async u (.next/server/chunks/_4326a0c0._.js:1:850)
+    at async d (.next/server/chunks/[root-of-the-server]__577747d5._.js:1:1725)
+    at async o (.next/server/chunks/[root-of-the-server]__577747d5._.js:33:1019)
+    at async u (.next/server/chunks/[root-of-the-server]__577747d5._.js:33:4753) {
+  length: 128,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '40',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1065',
+  routine: 'checkInsertTargets'
+}
+2025-11-08T02:57:58: [createShortLink] Error: error: column "title" of relation "short_link" does not exist
+    at async (.next/server/chunks/[root-of-the-server]__577747d5._.js:10:336)
+    at async u (.next/server/chunks/_4326a0c0._.js:1:850)
+    at async d (.next/server/chunks/[root-of-the-server]__577747d5._.js:1:1725)
+    at async o (.next/server/chunks/[root-of-the-server]__577747d5._.js:33:1019)
+    at async u (.next/server/chunks/[root-of-the-server]__577747d5._.js:33:4753) {
+  length: 128,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '40',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1065',
+  routine: 'checkInsertTargets'
+}
